@@ -472,8 +472,15 @@ class DashboardPageTests(unittest.TestCase):
         self.assertIn("/api/summary", page)
         self.assertNotRegex(page, r"https?://")
         for label in (
+            "体彩数据追踪与校准平台",
             "数据校准概览",
+            "近 7 天",
+            "近 30 天",
+            "全部",
+            "模型校准趋势",
+            "校准可靠性",
             "策略表现对比",
+            "最近台账活动",
             "运行状态",
             "证据状态",
             "智能体流程",
@@ -483,6 +490,11 @@ class DashboardPageTests(unittest.TestCase):
         self.assertNotIn(">Agent workflow<", page)
         for label in ("赔率采集", "欧洲 1X2", "调度事件已过期"):
             self.assertIn(label, page)
+        for hook in ("trend-chart", "reliability-chart", "renderTrend", "renderReliability"):
+            self.assertIn(hook, page)
+        self.assertIn('id="warning-list"', page)
+        self.assertIn("@media (max-width:640px)", page)
+        self.assertNotIn(".metric-grid,.chart-grid { grid-template-columns:1fr; }", page)
 
 
 if __name__ == "__main__":
