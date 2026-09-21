@@ -8,7 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 from urllib.error import HTTPError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from outputs.tai_cai_tracker.dashboard import build_summary, create_server
 from outputs.tai_cai_tracker.ledger import freeze_evidence_event, freeze_prediction, settle_prediction
@@ -277,11 +277,17 @@ class DashboardSummaryTests(unittest.TestCase):
 
 class DashboardServerTests(unittest.TestCase):
     def _request(self, base_url, path):
-        with urlopen(f"{base_url}{path}", timeout=3) as response:
+        status, content_type, _, body = self._raw_request(base_url, path)
+        return status, content_type, body.decode("utf-8")
+
+    def _raw_request(self, base_url, path, method="GET"):
+        request = Request(f"{base_url}{path}", method=method)
+        with urlopen(request, timeout=3) as response:
             return (
                 response.status,
                 response.headers.get_content_type(),
-                response.read().decode("utf-8"),
+                response.headers["Content-Length"],
+                response.read(),
             )
 
     def _running_server(self, ledger_path, scheduler_log_path=None):
@@ -320,9 +326,10 @@ class DashboardServerTests(unittest.TestCase):
             self.assertEqual(json.loads(body), {"status": "ok"})
 
     def test_api_endpoints_return_a_json_error_without_traceback_when_ledger_is_missing(self):
-        missing_ledger_path = Path(tempfile.gettempdir()) / "missing-dashboard-ledger.jsonl"
-        missing_ledger_path.unlink(missing_ok=True)
-        self._assert_api_error_for_ledger(missing_ledger_path)
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            missing_ledger_path = Path(temporary_directory) / "missing-ledger.jsonl"
+
+            self._assert_api_error_for_ledger(missing_ledger_path)
 
     def test_api_endpoints_return_a_json_error_without_traceback_when_ledger_is_invalid(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -342,9 +349,11 @@ class DashboardServerTests(unittest.TestCase):
                 response = raised.exception
                 self.assertEqual(response.code, 500)
                 self.assertEqual(response.headers.get_content_type(), "application/json")
-                payload = json.loads(response.read().decode("utf-8"))
-                self.assertIn("error", payload)
-                self.assertNotIn("traceback", json.dumps(payload).lower())
+                body = response.read().decode("utf-8")
+                payload = json.loads(body)
+                self.assertEqual(payload, {"error": "Dashboard data is unavailable."})
+                self.assertNotIn(str(ledger_path), body)
+                self.assertNotIn("traceback", body.lower())
 
     def test_root_serves_the_dashboard_html_with_expected_title(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -357,9 +366,32 @@ class DashboardServerTests(unittest.TestCase):
             self.assertEqual(content_type, "text/html")
             self.assertIn("<title>TaiCaiTracker Dashboard</title>", body)
 
+    def test_head_endpoints_match_get_metadata_without_a_response_body(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            ledger_path = Path(temporary_directory) / "ledger.jsonl"
+            ledger_path.write_text("", encoding="utf-8")
+            base_url = self._running_server(ledger_path)
+
+            for path in ("/", "/api/summary", "/api/health"):
+                with self.subTest(path=path):
+                    get_status, get_type, get_length, get_body = self._raw_request(
+                        base_url, path
+                    )
+                    head_status, head_type, head_length, head_body = self._raw_request(
+                        base_url, path, method="HEAD"
+                    )
+
+                    self.assertEqual(head_status, get_status)
+                    self.assertEqual(head_type, get_type)
+                    self.assertEqual(head_length, get_length)
+                    self.assertEqual(head_length, str(len(get_body)))
+                    self.assertEqual(head_body, b"")
+
     def test_create_server_rejects_non_loopback_hosts(self):
-        with self.assertRaisesRegex(ValueError, "loopback"):
-            create_server("ledger.jsonl", host="0.0.0.0")
+        for host in ("0.0.0.0", "localhost"):
+            with self.subTest(host=host):
+                with self.assertRaisesRegex(ValueError, "loopback"):
+                    create_server("ledger.jsonl", host=host)
 
 
 if __name__ == "__main__":

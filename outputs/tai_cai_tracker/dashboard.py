@@ -276,7 +276,7 @@ def build_summary(ledger_path, scheduler_log_path=None, now=None):
     }
 
 
-_LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+_LOOPBACK_HOSTS = {"127.0.0.1", "::1"}
 _DASHBOARD_HTML_PATH = Path(__file__).with_name("static") / "dashboard.html"
 
 
@@ -284,54 +284,66 @@ def _validate_loopback_host(host):
     if host not in _LOOPBACK_HOSTS:
         raise ValueError(
             "Dashboard server host must be a loopback address: "
-            "127.0.0.1, ::1, or localhost"
+            "127.0.0.1 or ::1"
         )
 
 
 def _dashboard_handler(ledger_path, scheduler_log_path):
     class DashboardHandler(BaseHTTPRequestHandler):
-        def _send_json(self, status, payload):
+        def _send_json(self, status, payload, include_body):
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            if include_body:
+                self.wfile.write(body)
 
-        def _send_summary_error(self, error):
-            self._send_json(500, {"error": str(error)})
+        def _send_dashboard_error(self, include_body):
+            self._send_json(
+                500, {"error": "Dashboard data is unavailable."}, include_body
+            )
 
-        def do_GET(self):
+        def _handle_request(self, include_body):
             if self.path == "/api/summary":
                 try:
-                    self._send_json(200, build_summary(ledger_path, scheduler_log_path))
-                except Exception as error:
-                    self._send_summary_error(error)
+                    self._send_json(
+                        200, build_summary(ledger_path, scheduler_log_path), include_body
+                    )
+                except Exception:
+                    self._send_dashboard_error(include_body)
                 return
 
             if self.path == "/api/health":
                 try:
                     build_summary(ledger_path, scheduler_log_path)
-                except Exception as error:
-                    self._send_summary_error(error)
+                except Exception:
+                    self._send_dashboard_error(include_body)
                 else:
-                    self._send_json(200, {"status": "ok"})
+                    self._send_json(200, {"status": "ok"}, include_body)
                 return
 
             if self.path == "/":
                 try:
                     body = _DASHBOARD_HTML_PATH.read_bytes()
                 except OSError:
-                    self._send_json(500, {"error": "Dashboard page is unavailable."})
+                    self._send_dashboard_error(include_body)
                     return
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
-                self.wfile.write(body)
+                if include_body:
+                    self.wfile.write(body)
                 return
 
-            self._send_json(404, {"error": "Not found."})
+            self._send_json(404, {"error": "Not found."}, include_body)
+
+        def do_GET(self):
+            self._handle_request(include_body=True)
+
+        def do_HEAD(self):
+            self._handle_request(include_body=False)
 
         def log_message(self, format, *args):
             return
