@@ -367,7 +367,7 @@ class DashboardServerTests(unittest.TestCase):
                 self.assertNotIn(str(ledger_path), body)
                 self.assertNotIn("traceback", body.lower())
 
-    def test_root_serves_the_dashboard_html_with_expected_title(self):
+    def test_root_serves_the_dashboard_html_with_chinese_product_title(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             ledger_path = Path(temporary_directory) / "ledger.jsonl"
             ledger_path.write_text("", encoding="utf-8")
@@ -376,7 +376,7 @@ class DashboardServerTests(unittest.TestCase):
 
             self.assertEqual(status, 200)
             self.assertEqual(content_type, "text/html")
-            self.assertIn("<title>TaiCaiTracker Dashboard</title>", body)
+            self.assertIn("<title>体彩数据追踪与校准平台</title>", body)
 
     def test_head_endpoints_match_get_metadata_without_a_response_body(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -407,7 +407,7 @@ class DashboardServerTests(unittest.TestCase):
 
 
 class DashboardPageTests(unittest.TestCase):
-    def test_dashboard_page_uses_only_local_api_and_exposes_required_sections(self):
+    def test_dashboard_page_uses_only_local_api_and_exposes_chinese_sections(self):
         page = (
             Path(__file__).resolve().parents[2]
             / "outputs"
@@ -419,12 +419,16 @@ class DashboardPageTests(unittest.TestCase):
         self.assertIn("/api/summary", page)
         self.assertNotRegex(page, r"https?://")
         for label in (
-            "Calibration",
-            "Strategy",
-            "Operations",
-            "Evidence",
-            "Agent workflow",
+            "数据校准概览",
+            "策略表现对比",
+            "运行状态",
+            "证据状态",
+            "智能体流程",
         ):
+            self.assertIn(label, page)
+        self.assertNotIn(">Operations<", page)
+        self.assertNotIn(">Agent workflow<", page)
+        for label in ("赔率采集", "欧洲 1X2", "调度事件已过期"):
             self.assertIn(label, page)
 
 
