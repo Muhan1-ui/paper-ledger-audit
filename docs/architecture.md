@@ -1,4 +1,4 @@
-# Architecture
+# 系统架构
 
 ```mermaid
 flowchart LR
@@ -13,4 +13,4 @@ flowchart LR
   T --> D
 ```
 
-Only the CLI appends ledger records. The dashboard reads the ledger and scheduler log, binds only to loopback, and exposes no mutation endpoint.
+只有 CLI 可以追加台账记录。仪表盘只读取台账和调度日志，仅绑定回环地址，不暴露任何修改数据的接口。

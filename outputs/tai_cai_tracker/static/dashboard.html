@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -51,22 +51,22 @@
 <body>
   <main class="shell">
     <header class="topbar">
-      <div><p class="eyebrow">Read-only paper calibration monitor</p><h1>TaiCaiTracker</h1><p class="subtle">Local portfolio dashboard</p></div>
-      <div class="meta-row"><span id="page-status" class="status neutral" aria-live="polite">Loading</span><time id="generated-at" class="timestamp">Awaiting local summary</time><button id="reload" class="reload" type="button">Reload</button></div>
+      <div><p class="eyebrow">只读纸面校准监测</p><h1>TaiCaiTracker</h1><p class="subtle">本地项目展示仪表盘</p></div>
+      <div class="meta-row"><span id="page-status" class="status neutral" aria-live="polite">加载中</span><time id="generated-at" class="timestamp">等待本地汇总</time><button id="reload" class="reload" type="button">刷新</button></div>
     </header>
     <div class="main-grid">
       <div class="stack">
         <section class="panel" aria-labelledby="calibration-heading">
-          <div class="section-head"><h2 id="calibration-heading">Calibration</h2><span id="calibration-status" class="status neutral">Unavailable</span></div>
+          <div class="section-head"><h2 id="calibration-heading">校准概览</h2><span id="calibration-status" class="status neutral">不可用</span></div>
           <div class="metric-grid"><div class="metric"><div class="metric-label">Brier average</div><div id="brier" class="metric-value">--</div><div class="metric-note">Lower is better</div></div><div class="metric"><div class="metric-label">Log loss</div><div id="log-loss" class="metric-value">--</div><div class="metric-note">Lower is better</div></div><div class="metric"><div class="metric-label">Expected calibration error</div><div id="ece" class="metric-value">--</div><div class="metric-note">Reliability check</div></div></div>
           <div class="gate"><div class="panel-meta"><strong>Sampling gate</strong><span id="sample-gate-label">No sample data</span></div><div class="gate-track" aria-hidden="true"><div id="sample-gate-fill" class="gate-fill" style="width:0%"></div></div><div id="sample-gate-copy" class="gate-copy">Calibration remains unavailable until the settled sample gate is met.</div></div>
         </section>
         <section class="panel" aria-labelledby="strategy-heading">
-          <div class="section-head"><h2 id="strategy-heading">Strategy</h2><span id="strategy-count" class="panel-meta">No strategy rows</span></div>
+          <div class="section-head"><h2 id="strategy-heading">策略对比</h2><span id="strategy-count" class="panel-meta">暂无策略记录</span></div>
           <div class="table-wrap"><table><thead><tr><th scope="col">Strategy</th><th scope="col">Settled</th><th scope="col">Brier</th><th scope="col">Log loss</th><th scope="col">Top pick</th></tr></thead><tbody id="strategy-rows"><tr><td colspan="5" class="empty">Strategy comparison is unavailable.</td></tr></tbody></table></div>
         </section>
         <section class="panel" aria-labelledby="ledger-heading">
-          <div class="section-head"><h2 id="ledger-heading">Recent ledger activity</h2><span class="panel-meta">Sanitized records</span></div>
+          <div class="section-head"><h2 id="ledger-heading">最近台账活动</h2><span class="panel-meta">已脱敏记录</span></div>
           <div class="table-wrap"><table class="ledger-table"><thead><tr><th scope="col">Type</th><th scope="col">Match identity</th><th scope="col">Timestamp</th><th scope="col">Hash</th></tr></thead><tbody id="ledger-rows"><tr><td colspan="4" class="empty">No ledger activity is available.</td></tr></tbody></table></div>
         </section>
       </div>
