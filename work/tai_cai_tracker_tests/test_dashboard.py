@@ -181,6 +181,37 @@ class DashboardSummaryTests(unittest.TestCase):
             self.assertTrue(summary["operations"]["stale"])
             self.assertIn("Scheduler event is stale: 25 hours old.", summary["warnings"])
 
+    def test_build_summary_orders_mixed_offset_recent_records_by_instant(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            ledger_path = Path(temporary_directory) / "ledger.jsonl"
+            captured_times = [
+                *(f"2099-01-01T{hour:02d}:00:00+00:00" for hour in range(9)),
+                "2099-01-01T20:00:00+08:00",
+                "2099-01-01T13:00:00+00:00",
+                "2099-01-01T14:00:00+00:00",
+            ]
+            records = []
+            for index, captured_at in enumerate(captured_times, start=1):
+                prediction = deepcopy(PREDICTION)
+                prediction["match_id"] = f"20990102{index:03d}"
+                prediction["captured_at"] = captured_at
+                prediction["kickoff_at"] = "2099-01-02T20:00:00+00:00"
+                records.append(freeze_prediction(prediction))
+            self._write_records(ledger_path, records)
+
+            summary = build_summary(ledger_path)
+
+            recent_ids = [item["match_identity"]["match_id"] for item in summary["recent_records"]]
+            self.assertEqual(recent_ids[0], "20990102012")
+            self.assertLess(
+                recent_ids.index("20990102011"),
+                recent_ids.index("20990102010"),
+            )
+            self.assertEqual(len(recent_ids), 10)
+            self.assertIn("20990102011", recent_ids)
+            self.assertNotIn("20990102001", recent_ids)
+            self.assertNotIn("20990102002", recent_ids)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -151,6 +151,16 @@ def _record_timestamp(record):
     return None
 
 
+def _timestamp_for_sort(value):
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else None
+
+
 def _identity_for_record(record, predictions, snapshots):
     source = record
     record_type = record.get("record_type")
@@ -186,22 +196,26 @@ def _recent_records(records):
     items = []
     for position, record in enumerate(records):
         content_hash = record.get("content_hash", "")
+        timestamp = _record_timestamp(record)
         items.append({
             "record_type": record.get("record_type", "unknown"),
             "match_identity": _identity_for_record(record, predictions, snapshots),
-            "timestamp": _record_timestamp(record),
+            "timestamp": timestamp,
             "content_hash_prefix": content_hash[:12] if isinstance(content_hash, str) else "",
+            "_sort_timestamp": _timestamp_for_sort(timestamp),
             "_position": position,
         })
     items.sort(
         key=lambda item: (
-            item["timestamp"] is not None,
+            item["_sort_timestamp"] is not None,
+            item["_sort_timestamp"] or datetime.min.replace(tzinfo=timezone.utc),
             item["timestamp"] or "",
             item["_position"],
         ),
         reverse=True,
     )
     for item in items:
+        item.pop("_sort_timestamp")
         item.pop("_position")
     return items[:10]
 
