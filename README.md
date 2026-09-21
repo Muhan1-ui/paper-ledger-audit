@@ -12,11 +12,11 @@ powershell -ExecutionPolicy Bypass -File work/start-dashboard.ps1
 
 ## 工程亮点
 
-- Immutable JSONL ledger with linked prediction and settlement hashes.
-- Evidence quality gates for official data, named odds references, xG context, and cutoff timing.
-- Calibration reporting with Brier score, log loss, ECE, source cohorts, and sample gates.
-- Agent workflow: collect evidence, validate constraints, freeze a paper record, settle only from official results.
-- Standard-library localhost API with no external browser requests.
+- 基于 JSONL 的不可变台账，预测与结算记录通过内容哈希关联。
+- 对官方数据、具名赔率参考、xG 上下文和截止时间设置证据质量门禁。
+- 输出 Brier Score、Log Loss、ECE、来源分组和样本门槛等校准报告。
+- Agent 工作流：采集证据、校验约束、冻结纸面记录、仅以官方赛果结算。
+- 基于 Python 标准库的 localhost API，浏览器不请求外部资源。
 
 ## 验证
 
