@@ -10,7 +10,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from outputs.tai_cai_tracker.dashboard import build_summary, create_server
+from outputs.tai_cai_tracker.dashboard import _calibration_summary, build_summary, create_server
 from outputs.tai_cai_tracker.ledger import freeze_evidence_event, freeze_prediction, settle_prediction
 
 
@@ -37,6 +37,18 @@ PREDICTION = {
 
 
 class DashboardSummaryTests(unittest.TestCase):
+    def test_available_calibration_uses_the_standard_sample_gate_when_report_omits_it(self):
+        summary = _calibration_summary({
+            "available": True,
+            "settled_records": 98,
+            "brier_average": Decimal("0.62"),
+            "log_loss_average": Decimal("1.04"),
+            "expected_calibration_error": Decimal("0.03"),
+        })
+
+        self.assertEqual(summary["minimum_settled_records"], 50)
+        self.assertTrue(summary["sample_gate"]["met"])
+
     def _write_records(self, ledger_path, records):
         ledger_path.write_text(
             "".join(json.dumps(record, default=str) + "\n" for record in records),

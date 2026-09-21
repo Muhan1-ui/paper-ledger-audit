@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Mapping
 
 from .cli import read_records
-from .report import calibration_report
+from .report import MINIMUM_SETTLED_RECORDS, calibration_report
 
 
 def _json_value(value):
@@ -40,13 +40,18 @@ def _sample_gate(report, count_key, minimum_key):
 
 
 def _calibration_summary(report):
+    minimum_settled_records = report.get(
+        "minimum_settled_records", MINIMUM_SETTLED_RECORDS
+    )
     result = {
         "available": report["available"],
         "settled_records": report["settled_records"],
-        "minimum_settled_records": report["minimum_settled_records"],
-        "sample_gate": _sample_gate(
-            report, "settled_records", "minimum_settled_records"
-        ),
+        "minimum_settled_records": minimum_settled_records,
+        "sample_gate": {
+            "settled_records": report["settled_records"],
+            "minimum_settled_records": minimum_settled_records,
+            "met": report["settled_records"] >= minimum_settled_records,
+        },
     }
     for key in (
         "phase",
