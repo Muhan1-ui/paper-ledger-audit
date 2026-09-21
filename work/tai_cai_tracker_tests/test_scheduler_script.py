@@ -3,6 +3,14 @@ from pathlib import Path
 
 
 class SchedulerScriptTests(unittest.TestCase):
+    def test_launchers_resolve_python_without_machine_specific_path(self):
+        root = Path(__file__).resolve().parents[2]
+        task = (root / "work" / "run-tai-cai-task.ps1").read_text(encoding="utf-8")
+        dashboard = root / "work" / "start-dashboard.ps1"
+        self.assertNotIn("D:\\python\\python.exe", task)
+        self.assertIn("TAICAI_PYTHON", task)
+        self.assertIn("Get-Command python", task)
+        self.assertTrue(dashboard.exists())
     def test_prematch_window_matches_the_automation_contract(self):
         script = (Path(__file__).resolve().parents[1] / "run-tai-cai-task.ps1").read_text(
             encoding="utf-8"

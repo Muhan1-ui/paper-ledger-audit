@@ -1,6 +1,7 @@
 param(
     [ValidateSet("preflight", "prematch", "settle", "status", "cycle")]
-    [string]$Mode = "prematch"
+    [string]$Mode = "prematch",
+    [string]$PythonPath
 )
 
 $ErrorActionPreference = "Stop"
@@ -8,7 +9,13 @@ $ErrorActionPreference = "Stop"
 $OutputEncoding = [Console]::OutputEncoding
 $env:PYTHONIOENCODING = "utf-8"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
-$Python = "D:\python\python.exe"
+if ($PythonPath -and (Test-Path -LiteralPath $PythonPath)) {
+    $Python = $PythonPath
+} elseif ($env:TAICAI_PYTHON -and (Test-Path -LiteralPath $env:TAICAI_PYTHON)) {
+    $Python = $env:TAICAI_PYTHON
+} else {
+    $Python = (Get-Command python -ErrorAction Stop).Source
+}
 $Ledger = "outputs\tai_cai_tracker\data\paper_ledger.jsonl"
 $LogDirectory = Join-Path $PSScriptRoot "logs"
 $PrematchStatePath = Join-Path $LogDirectory "prematch-state.json"
