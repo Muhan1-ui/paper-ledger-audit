@@ -49,6 +49,59 @@ class DashboardSummaryTests(unittest.TestCase):
         self.assertEqual(summary["minimum_settled_records"], 50)
         self.assertTrue(summary["sample_gate"]["met"])
 
+    def test_build_summary_projects_capture_date_trend_and_reliability(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            ledger_path = Path(temporary_directory) / "ledger.jsonl"
+            records = []
+            for index in range(50):
+                prediction_input = deepcopy(PREDICTION)
+                prediction_input["match_id"] = f"209901{index:05d}"
+                prediction_input["captured_at"] = (
+                    "2099-01-01T18:00:00+00:00"
+                    if index < 25
+                    else "2099-01-02T18:00:00+00:00"
+                )
+                prediction_input["kickoff_at"] = "2099-01-03T20:00:00+00:00"
+                prediction = freeze_prediction(prediction_input)
+                records.extend((
+                    prediction,
+                    settle_prediction(
+                        prediction,
+                        "home_win",
+                        f"https://official.example.test/results/{prediction_input['match_id']}",
+                    ),
+                ))
+            self._write_records(ledger_path, records)
+            original_ledger = ledger_path.read_bytes()
+
+            summary = build_summary(
+                ledger_path,
+                now=datetime(2099, 1, 4, tzinfo=timezone.utc),
+            )
+
+            self.assertEqual(ledger_path.read_bytes(), original_ledger)
+            self.assertEqual(
+                [item["date"] for item in summary["calibration"]["trend"]],
+                ["2099-01-01", "2099-01-02"],
+            )
+            self.assertEqual(
+                [item["settled_records"] for item in summary["calibration"]["trend"]],
+                [25, 25],
+            )
+            self.assertEqual(summary["calibration"]["reliability"], [{
+                "confidence": "0.5", "accuracy": "1", "records": 50,
+            }])
+
+    def test_build_summary_exposes_empty_visual_data_without_settlements(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            ledger_path = Path(temporary_directory) / "ledger.jsonl"
+            self._write_records(ledger_path, [])
+
+            summary = build_summary(ledger_path)
+
+            self.assertEqual(summary["calibration"]["trend"], [])
+            self.assertEqual(summary["calibration"]["reliability"], [])
+
     def _write_records(self, ledger_path, records):
         ledger_path.write_text(
             "".join(json.dumps(record, default=str) + "\n" for record in records),

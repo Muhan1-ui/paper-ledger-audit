@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Mapping
 
 from .cli import read_records
-from .report import MINIMUM_SETTLED_RECORDS, calibration_report
+from .report import MINIMUM_SETTLED_RECORDS, brier_score, calibration_report, log_loss
 
 
 def _json_value(value):
@@ -39,7 +39,70 @@ def _sample_gate(report, count_key, minimum_key):
     }
 
 
-def _calibration_summary(report):
+def _visual_pairs(records):
+    predictions = {
+        record.get("content_hash"): record
+        for record in records
+        if record.get("record_type") == "prediction"
+    }
+    invalidated_settlements = {
+        record.get("settlement_hash")
+        for record in records
+        if record.get("record_type") == "settlement_invalidation"
+    }
+    pairs = []
+    for settlement in records:
+        if (
+            settlement.get("record_type") != "settlement"
+            or settlement.get("content_hash") in invalidated_settlements
+        ):
+            continue
+        prediction = predictions.get(settlement.get("prediction_hash"))
+        if prediction and prediction.get("prediction_role", "primary") == "primary":
+            pairs.append((prediction, settlement))
+    return pairs
+
+
+def _visual_calibration_summary(records, report):
+    grouped = {}
+    for prediction, settlement in _visual_pairs(records):
+        captured_at = _timestamp_for_sort(prediction.get("captured_at"))
+        if captured_at is not None:
+            grouped.setdefault(captured_at.date().isoformat(), []).append(
+                (prediction, settlement)
+            )
+
+    trend = []
+    for date in sorted(grouped):
+        pairs = grouped[date]
+        count = Decimal(len(pairs))
+        trend.append({
+            "date": date,
+            "settled_records": len(pairs),
+            "brier_average": sum(
+                (brier_score(prediction, settlement) for prediction, settlement in pairs),
+                Decimal(0),
+            ) / count,
+            "log_loss_average": sum(
+                (log_loss(prediction, settlement) for prediction, settlement in pairs),
+                Decimal(0),
+            ) / count,
+            "expected_calibration_error": None,
+        })
+
+    reliability = []
+    for bucket in report.get("confidence_buckets", {}).values():
+        if bucket.get("records", 0) and "accuracy" in bucket:
+            reliability.append({
+                "confidence": bucket["average_confidence"],
+                "accuracy": bucket["accuracy"],
+                "records": bucket["records"],
+            })
+    reliability.sort(key=lambda item: item["confidence"])
+    return _json_value({"trend": trend, "reliability": reliability})
+
+
+def _calibration_summary(report, records=None):
     minimum_settled_records = report.get(
         "minimum_settled_records", MINIMUM_SETTLED_RECORDS
     )
@@ -74,6 +137,7 @@ def _calibration_summary(report):
                 "enhanced_settled_records",
                 "minimum_enhanced_settled_records",
             )
+    result.update(_visual_calibration_summary(records or [], report))
     return _json_value(result)
 
 
@@ -269,7 +333,7 @@ def build_summary(ledger_path, scheduler_log_path=None, now=None):
 
     return {
         "generated_at": now.isoformat(),
-        "calibration": _calibration_summary(report),
+        "calibration": _calibration_summary(report, records),
         "strategies": _strategy_summary(report),
         "operations": operations,
         "evidence": _json_value({
