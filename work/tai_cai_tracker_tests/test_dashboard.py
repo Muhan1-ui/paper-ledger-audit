@@ -394,5 +394,27 @@ class DashboardServerTests(unittest.TestCase):
                     create_server("ledger.jsonl", host=host)
 
 
+class DashboardPageTests(unittest.TestCase):
+    def test_dashboard_page_uses_only_local_api_and_exposes_required_sections(self):
+        page = (
+            Path(__file__).resolve().parents[2]
+            / "outputs"
+            / "tai_cai_tracker"
+            / "static"
+            / "dashboard.html"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("/api/summary", page)
+        self.assertNotRegex(page, r"https?://")
+        for label in (
+            "Calibration",
+            "Strategy",
+            "Operations",
+            "Evidence",
+            "Agent workflow",
+        ):
+            self.assertIn(label, page)
+
+
 if __name__ == "__main__":
     unittest.main()
