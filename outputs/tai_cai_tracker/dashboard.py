@@ -95,22 +95,29 @@ def _parse_scheduler_event(scheduler_log_path, warnings):
         warnings.append("Scheduler log is unavailable.")
         return None
 
-    latest = None
-    for line_number, line in enumerate(lines, start=1):
-        if not line.strip():
-            continue
-        try:
-            candidate = json.loads(line)
-        except json.JSONDecodeError:
-            warnings.append(f"Scheduler log contains malformed JSONL on line {line_number}.")
-            continue
-        if not isinstance(candidate, Mapping):
-            warnings.append(f"Scheduler log entry on line {line_number} is not an object.")
-            continue
-        latest = dict(candidate)
-    if latest is None:
+    nonempty_lines = [
+        (line_number, line)
+        for line_number, line in enumerate(lines, start=1)
+        if line.strip()
+    ]
+    if not nonempty_lines:
         warnings.append("Scheduler log contains no usable events.")
-    return latest
+        return None
+
+    line_number, line = nonempty_lines[-1]
+    try:
+        candidate = json.loads(line)
+    except json.JSONDecodeError:
+        warnings.append(
+            f"Scheduler log final nonempty line {line_number} is malformed JSONL."
+        )
+        return None
+    if not isinstance(candidate, Mapping):
+        warnings.append(
+            f"Scheduler log final nonempty line {line_number} is not an object."
+        )
+        return None
+    return dict(candidate)
 
 
 def _operation_summary(event, now, warnings):
@@ -121,7 +128,14 @@ def _operation_summary(event, now, warnings):
     if not isinstance(status, str) or not status.strip():
         status = "unavailable"
         warnings.append("Latest scheduler event has no usable status.")
-    result = {"status": status, "event": _json_value(event)}
+    result = {"status": status}
+
+    for field in ("mode", "error"):
+        value = event.get(field)
+        if isinstance(value, str) and value.strip():
+            result[field] = value
+    if isinstance(event.get("recovery_scan"), bool):
+        result["recovery_scan"] = event["recovery_scan"]
 
     timestamp = event.get("timestamp")
     try:
@@ -131,6 +145,8 @@ def _operation_summary(event, now, warnings):
     except ValueError:
         warnings.append("Latest scheduler event has no usable timestamp.")
         return result
+
+    result["timestamp"] = timestamp
 
     age = Decimal(str((now - event_time).total_seconds())) / Decimal(3600)
     if age < 0:
@@ -223,17 +239,15 @@ def _recent_records(records):
 def build_summary(ledger_path, scheduler_log_path=None, now=None):
     """Build a compact dashboard view without writing ledger or scheduler data."""
     if now is None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).astimezone()
     if not isinstance(now, datetime) or now.tzinfo is None:
         raise ValueError("now must be a timezone-aware datetime")
 
     warnings = []
     ledger = Path(ledger_path)
-    if ledger.exists():
-        records = read_records(ledger)
-    else:
-        records = []
-        warnings.append("Ledger is unavailable.")
+    if not ledger.exists():
+        raise FileNotFoundError(f"Ledger file is unavailable: {ledger}")
+    records = read_records(ledger)
     report = calibration_report(records)
     if not report["available"]:
         warnings.append(

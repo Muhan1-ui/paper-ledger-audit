@@ -5,6 +5,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
+from unittest.mock import patch
 
 from outputs.tai_cai_tracker.dashboard import build_summary
 from outputs.tai_cai_tracker.ledger import freeze_evidence_event, freeze_prediction, settle_prediction
@@ -88,6 +89,10 @@ class DashboardSummaryTests(unittest.TestCase):
                     "timestamp": "2099-01-01T19:00:00+00:00",
                     "mode": "prematch",
                     "status": "completed",
+                    "recovery_scan": True,
+                    "error": "scheduler detail retained only as a compact field",
+                    "output": ["internal scheduler output"],
+                    "internal_detail": "must not be exposed",
                 }) + "\n",
                 encoding="utf-8",
             )
@@ -113,9 +118,17 @@ class DashboardSummaryTests(unittest.TestCase):
             )
             self.assertEqual(summary["strategies"][0]["brier_average"], "0.38")
             self.assertEqual(summary["strategies"][0]["top_pick_accuracy"], "1")
-            self.assertEqual(summary["operations"]["status"], "completed")
-            self.assertEqual(summary["operations"]["age_hours"], "1")
-            self.assertFalse(summary["operations"]["stale"])
+            self.assertEqual(summary["operations"], {
+                "timestamp": "2099-01-01T19:00:00+00:00",
+                "status": "completed",
+                "mode": "prematch",
+                "recovery_scan": True,
+                "error": "scheduler detail retained only as a compact field",
+                "age_hours": "1",
+                "stale": False,
+            })
+            self.assertNotIn("output", json.dumps(summary["operations"]))
+            self.assertNotIn("internal_detail", json.dumps(summary["operations"]))
             self.assertEqual(summary["evidence"]["event_counts"], {
                 "source_observation": 1,
                 "collection_failure": 0,
@@ -139,7 +152,7 @@ class DashboardSummaryTests(unittest.TestCase):
             self.assertEqual(summary["operations"], {"status": "unavailable"})
             self.assertIn("Scheduler log is unavailable.", summary["warnings"])
 
-    def test_build_summary_warns_on_malformed_final_log_line_without_crashing(self):
+    def test_build_summary_marks_malformed_final_scheduler_line_unavailable(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             temporary_path = Path(temporary_directory)
             ledger_path = temporary_path / "ledger.jsonl"
@@ -157,8 +170,54 @@ class DashboardSummaryTests(unittest.TestCase):
                 now=datetime(2099, 1, 1, 20, tzinfo=timezone.utc),
             )
 
-            self.assertEqual(summary["operations"]["status"], "completed")
-            self.assertIn("Scheduler log contains malformed JSONL on line 2.", summary["warnings"])
+            self.assertEqual(summary["operations"], {"status": "unavailable"})
+            self.assertIn(
+                "Scheduler log final nonempty line 2 is malformed JSONL.",
+                summary["warnings"],
+            )
+
+    def test_build_summary_marks_non_object_final_scheduler_line_unavailable(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            temporary_path = Path(temporary_directory)
+            ledger_path = temporary_path / "ledger.jsonl"
+            scheduler_path = temporary_path / "scheduler.jsonl"
+            self._write_records(ledger_path, [])
+            scheduler_path.write_text(
+                '{"timestamp":"2099-01-01T19:00:00+00:00","status":"completed"}\n'
+                '[]\n',
+                encoding="utf-8",
+            )
+
+            summary = build_summary(ledger_path, scheduler_path)
+
+            self.assertEqual(summary["operations"], {"status": "unavailable"})
+            self.assertIn(
+                "Scheduler log final nonempty line 2 is not an object.",
+                summary["warnings"],
+            )
+
+    def test_build_summary_rejects_a_missing_ledger(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            ledger_path = Path(temporary_directory) / "missing-ledger.jsonl"
+
+            with self.assertRaisesRegex(FileNotFoundError, "Ledger file is unavailable"):
+                build_summary(ledger_path)
+
+    def test_build_summary_defaults_generated_at_to_local_timezone(self):
+        class LocalClock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2099, 1, 1, 12, tzinfo=timezone.utc)
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            ledger_path = Path(temporary_directory) / "ledger.jsonl"
+            self._write_records(ledger_path, [])
+
+            with patch("outputs.tai_cai_tracker.dashboard.datetime", LocalClock):
+                summary = build_summary(ledger_path)
+
+            expected = LocalClock(2099, 1, 1, 12, tzinfo=timezone.utc).astimezone().isoformat()
+            self.assertEqual(summary["generated_at"], expected)
 
     def test_build_summary_marks_old_scheduler_event_stale(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
