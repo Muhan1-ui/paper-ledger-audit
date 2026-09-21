@@ -30,6 +30,11 @@ work/logs/*test*.txt
 work/logs/*.stdout.txt
 work/logs/*.stderr.txt
 
+# Local environment configuration
+.env
+.env.*
+!.env.example
+
 # Operating system and editor metadata
 .DS_Store
 Thumbs.db
