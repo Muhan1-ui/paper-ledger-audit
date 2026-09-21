@@ -1,0 +1,44 @@
+{
+  "market": "SPF",
+  "match_id": "周二002",
+  "kickoff_at": "2026-08-25T18:30:00+08:00",
+  "captured_at": "2026-08-25T13:57:07.7826611+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2041050",
+    "S2": "https://www.oddsportal.com/football/h2h/jeju-sk-vFZJewv4/pohang-KIIIipI5/#Gxljz6wg"
+  },
+  "match_context": {
+    "competition": "K League 1",
+    "home_team": "Jeju SK",
+    "away_team": "Pohang Steelers"
+  },
+  "fixed_prizes": {
+    "home_win": "2.13",
+    "draw": "2.98",
+    "away_win": "3.08"
+  },
+  "european_odds": {
+    "capture_hash": "4e411b0c2871fe39b8b5666d494607e1b1072a4c35d71cae289d18a00816049a"
+  },
+  "xg_inputs": {
+    "source_url": "https://www.fotmob.com/teams/133898/overview/jeju-sk",
+    "home_xg": "1.252083333333333333333333333",
+    "away_xg": "1.360416666666666666666666667",
+    "model_version": "poisson-v1",
+    "model_weight": "0.40",
+    "confidence_ceiling": "medium",
+    "evidence": {
+      "source_url": "https://www.fotmob.com/teams/133898/overview/jeju-sk",
+      "published_at": "2026-08-24T23:15:09+00:00",
+      "competition": "K League 1",
+      "season": "2026",
+      "sample_matches": 24,
+      "scope": "league_total",
+      "home_attack_xg": "30.5",
+      "home_defense_xga": "28.9",
+      "away_attack_xg": "36.4",
+      "away_defense_xga": "29.6",
+      "formula": "league_total: home_xg=mean(home_attack_xg/sample_matches, away_defense_xga/sample_matches); away_xg=mean(away_attack_xg/sample_matches, home_defense_xga/sample_matches)"
+    }
+  }
+}

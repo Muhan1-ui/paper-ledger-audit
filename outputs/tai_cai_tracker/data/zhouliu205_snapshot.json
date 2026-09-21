@@ -1,0 +1,18 @@
+{
+  "market": "SPF",
+  "match_id": "周六205",
+  "kickoff_at": "2026-07-25T22:00:00+08:00",
+  "captured_at": "2026-07-25T19:36:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040616",
+    "S2": "https://www.oddsportal.com/football/h2h/kristiansund-IDDWgzKt/start-CUoNY9xc/#dWid2sJr:1X2;2"
+  },
+  "fixed_prizes": {
+    "home_win": "1.92",
+    "draw": "3.50",
+    "away_win": "3.10"
+  },
+  "european_odds": {
+    "capture_hash": "5aa7a5766b30012d13efc9407beb9e14162b6d69221ab55508432baaee7e6dd7"
+  }
+}

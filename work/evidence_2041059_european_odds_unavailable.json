@@ -1,0 +1,11 @@
+{
+  "record_type": "collection_failure",
+  "match_id": "周三002",
+  "evidence_kind": "european_1x2",
+  "attempted_at": "2026-08-26T10:30:51.7997751+08:00",
+  "collector": "oddsportal-extract",
+  "parser_version": "2026.08.26",
+  "reason_code": "incomplete_data",
+  "reason": "The public current-layout page identifies the event but its server response does not expose a named bookmaker with a complete 1X2 row; unnamed provider identifiers were not imported.",
+  "attempted_source_url": "https://www.oddsportal.com/football/h2h/anyang-QRK4aI4P/incheon-prJ1QuXA/#O2ibYq85:1X2;2"
+}

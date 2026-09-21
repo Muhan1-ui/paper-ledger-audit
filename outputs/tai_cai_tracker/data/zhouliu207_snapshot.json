@@ -1,0 +1,23 @@
+{
+  "market": "SPF",
+  "match_id": "周六207",
+  "kickoff_at": "2026-07-25T23:30:00+08:00",
+  "captured_at": "2026-07-25T19:50:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040618",
+    "S2": "https://www.oddsportal.com/football/h2h/kalmar-rkrUu5ae/mjallby-S0XtXM1E/#SUKFpNDs:1X2;2"
+  },
+  "fixed_prizes": {
+    "home_win": "2.30",
+    "draw": "3.32",
+    "away_win": "2.55"
+  },
+  "european_odds": {
+    "capture_hash": "0cae8253e7cd899febe94a1c40a8d01f586c29b62775ec738d273e20356fdc13"
+  },
+  "match_context": {
+    "competition": "Sweden Allsvenskan",
+    "home_team": "Kalmar",
+    "away_team": "Mjallby"
+  }
+}

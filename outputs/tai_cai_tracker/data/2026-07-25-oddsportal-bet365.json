@@ -1,0 +1,31 @@
+{
+  "provider": "OddsPortal user-supplied screenshot",
+  "captures": [
+    {
+      "match_id": "\u5468\u516d201",
+      "kickoff_at": "2026-07-25T18:30:00+08:00",
+      "captured_at": "2026-07-25T12:52:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/daejeon-2NTiQXjI/gimcheon-sangmu-IaoBca9i/#QkEdB4mQ:1X2;2",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "2.80",
+        "draw": "3.25",
+        "away_win": "2.38"
+      }
+    },
+    {
+      "match_id": "\u5468\u516d202",
+      "kickoff_at": "2026-07-25T18:30:00+08:00",
+      "captured_at": "2026-07-25T12:52:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/jeonbuk-x0hNfcgA/pohang-KIIIipI5/#YeRAm1eJ:1X2;2",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "3.00",
+        "draw": "3.10",
+        "away_win": "2.30"
+      }
+    }
+  ]
+}

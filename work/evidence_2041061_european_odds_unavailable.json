@@ -1,0 +1,11 @@
+{
+  "record_type": "collection_failure",
+  "match_id": "周三004",
+  "evidence_kind": "european_1x2",
+  "attempted_at": "2026-08-26T12:11:11.6505984+08:00",
+  "collector": "oddsportal-public-event-extract",
+  "parser_version": "2026.08.26",
+  "reason_code": "incomplete_data",
+  "reason": "The public EFL Cup event listing exposes three 1X2 prices only under internal provider identifiers. The public provider-name mapping was unavailable after a 429 response, so no named bookmaker 1X2 row was imported.",
+  "attempted_source_url": "https://www.oddsportal.com/football/h2h/newcastle-utd-p6ahwuwJ/west-brom-CCBWpzjj/#4GzyLE2N:1X2;2"
+}

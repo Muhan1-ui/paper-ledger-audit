@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal user-supplied screenshot",
+  "captures": [
+    {
+      "match_id": "周六205",
+      "kickoff_at": "2026-07-25T22:00:00+08:00",
+      "captured_at": "2026-07-25T19:36:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/kristiansund-IDDWgzKt/start-CUoNY9xc/#dWid2sJr:1X2;2",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "2.15",
+        "draw": "3.50",
+        "away_win": "3.20"
+      }
+    }
+  ]
+}

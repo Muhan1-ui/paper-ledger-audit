@@ -1,0 +1,44 @@
+{
+  "market": "SPF",
+  "match_id": "周二001",
+  "kickoff_at": "2026-08-25T18:30:00+08:00",
+  "captured_at": "2026-08-25T11:19:04.4338565+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2041049",
+    "S2": "https://www.oddsportal.com/football/h2h/gimcheon-sangmu-IaoBca9i/jeonbuk-x0hNfcgA/#dzYlxS8t"
+  },
+  "match_context": {
+    "competition": "K League 1",
+    "home_team": "Gimcheon Sangmu",
+    "away_team": "Jeonbuk Hyundai Motors FC"
+  },
+  "fixed_prizes": {
+    "home_win": "2.92",
+    "draw": "3.15",
+    "away_win": "2.13"
+  },
+  "european_odds": {
+    "capture_hash": "a891e027ba919069f2e39d327227643659bc36c871339acbb076b3f2ef4d3435"
+  },
+  "xg_inputs": {
+    "source_url": "https://www.fotmob.com/teams/133901/overview/gimcheon-sangmu",
+    "home_xg": "1.254166666666666666666666667",
+    "away_xg": "1.664583333333333333333333333",
+    "model_version": "poisson-v1",
+    "model_weight": "0.40",
+    "confidence_ceiling": "medium",
+    "evidence": {
+      "source_url": "https://www.fotmob.com/teams/133901/overview/gimcheon-sangmu",
+      "published_at": "2026-08-24T23:15:09+00:00",
+      "competition": "K League 1",
+      "season": "2026",
+      "sample_matches": 24,
+      "scope": "league_total",
+      "home_attack_xg": "30.3",
+      "home_defense_xga": "35.5",
+      "away_attack_xg": "44.4",
+      "away_defense_xga": "29.9",
+      "formula": "league_total: home_xg=mean(home_attack_xg/sample_matches, away_defense_xga/sample_matches); away_xg=mean(away_attack_xg/sample_matches, home_defense_xga/sample_matches)"
+    }
+  }
+}

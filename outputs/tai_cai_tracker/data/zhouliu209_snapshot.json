@@ -1,0 +1,18 @@
+{
+  "market": "SPF",
+  "match_id": "周六209",
+  "kickoff_at": "2026-07-26T05:30:00+08:00",
+  "captured_at": "2026-07-25T20:01:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040620",
+    "S2": "https://www.oddsportal.com/football/h2h/chapecoense-sc-jcQV3XP6/santos-n3QdnjFB/#UkF6bbHF:1X2;2"
+  },
+  "fixed_prizes": {
+    "home_win": "1.25",
+    "draw": "4.85",
+    "away_win": "8.10"
+  },
+  "european_odds": {
+    "capture_hash": "1ebf5935171f4a92d7e06e79a5b1da14658f714a7aff2cf1c1200d38b98d3fbc"
+  }
+}

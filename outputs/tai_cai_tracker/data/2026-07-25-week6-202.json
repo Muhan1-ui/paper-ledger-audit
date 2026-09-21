@@ -1,0 +1,23 @@
+{
+  "market": "SPF",
+  "match_id": "\u5468\u516d202",
+  "kickoff_at": "2026-07-25T18:30:00+08:00",
+  "captured_at": "2026-07-25T12:52:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/zqlszl/bssj/?mid=2040613",
+    "S2": "https://www.oddsportal.com/football/h2h/jeonbuk-x0hNfcgA/pohang-KIIIipI5/#YeRAm1eJ:1X2;2"
+  },
+  "match_context": {
+    "competition": "K League 1",
+    "home_team": "Pohang Steelers",
+    "away_team": "Jeonbuk"
+  },
+  "fixed_prizes": {
+    "home_win": "2.98",
+    "draw": "2.82",
+    "away_win": "2.28"
+  },
+  "european_odds": {
+    "capture_hash": "90ed923c1918fcfbf03f17d2cd7c6c6ebad23a6f27cb178f2e594e2386fce92a"
+  }
+}

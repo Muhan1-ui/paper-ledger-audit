@@ -1,0 +1,18 @@
+{
+  "provider": "sgodds visible match table",
+  "captures": [
+    {
+      "match_id": "周五202",
+      "kickoff_at": "2026-07-25T01:00:00+08:00",
+      "captured_at": "2026-07-24T17:13:22+08:00",
+      "source_url": "https://sgodds.com/football/current-odds/Vasteras-vs-Orgryte-140551",
+      "bookmaker": "singaporepools",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "1.53",
+        "draw": "3.90",
+        "away_win": "4.80"
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "provider": "OddsPortal user-supplied screenshot and China Sports Lottery official fixed-prize page",
+  "captures": [
+    {
+      "match_id": "周六210",
+      "kickoff_at": "2026-07-26T09:30:00+08:00",
+      "captured_at": "2026-07-25T22:18:52+08:00",
+      "source_url": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040621",
+      "bookmaker": null,
+      "source_quality": "unattributed",
+      "odds": {
+        "home_win": "2.25",
+        "draw": "3.60",
+        "away_win": "2.46"
+      }
+    },
+    {
+      "match_id": "周六210",
+      "kickoff_at": "2026-07-26T09:30:00+08:00",
+      "captured_at": "2026-07-26T00:54:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/fc-dallas-4GtbI4Q1/san-diego-fc-EuGkBf33/#pfctuT9t:ht-ft;2;31",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "2.20",
+        "draw": "3.90",
+        "away_win": "2.82"
+      }
+    }
+  ]
+}

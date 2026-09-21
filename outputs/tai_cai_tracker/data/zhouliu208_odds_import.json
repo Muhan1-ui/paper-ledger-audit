@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal user-supplied screenshot",
+  "captures": [
+    {
+      "match_id": "周六208",
+      "kickoff_at": "2026-07-26T05:30:00+08:00",
+      "captured_at": "2026-07-25T19:57:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/athletico-pr-UoAxb1Tq/internacional-tSCiHj0I/#IVTWoLX9:1X2;2",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "1.96",
+        "draw": "3.25",
+        "away_win": "4.00"
+      }
+    }
+  ]
+}

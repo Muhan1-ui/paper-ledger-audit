@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal user-supplied screenshot",
+  "captures": [
+    {
+      "match_id": "周六204",
+      "kickoff_at": "2026-07-25T21:30:00+08:00",
+      "captured_at": "2026-07-25T18:18:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/ac-oulu-Y35Jer59/mariehamn-C8bOhcyj/#zksrIHq9:1X2;2",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "5.25",
+        "draw": "3.90",
+        "away_win": "1.55"
+      }
+    }
+  ]
+}

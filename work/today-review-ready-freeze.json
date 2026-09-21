@@ -1,0 +1,64 @@
+{
+  "jobs": [
+    {
+      "match_id": 2041151,
+      "home_fotmob_url": "https://www.fotmob.com/teams/133898/overview/jeju-sk",
+      "away_fotmob_url": "https://www.fotmob.com/teams/133900/overview/daejeon-hana-citizen",
+      "odds_capture": {
+        "provider": "433足球网",
+        "source_url": "https://www.433.cool/zqzhishu/data/1332182.html",
+        "bookmaker": "Bet 365",
+        "captured_at": "2026-08-30T13:07:45.675397+08:00",
+        "odds": {"home_win": "3.3", "draw": "3.3", "away_win": "2"}
+      }
+    },
+    {
+      "match_id": 2041152,
+      "home_fotmob_url": "https://www.fotmob.com/teams/133895/overview/incheon-united",
+      "away_fotmob_url": "https://www.fotmob.com/teams/46038/overview/jeonbuk-hyundai-motors-fc",
+      "odds_capture": {
+        "provider": "433足球网",
+        "source_url": "https://www.433.cool/zqzhishu/data/1332291.html",
+        "bookmaker": "Bet 365",
+        "captured_at": "2026-08-30T13:07:45.198119+08:00",
+        "odds": {"home_win": "3", "draw": "3.1", "away_win": "2.25"}
+      }
+    },
+    {
+      "match_id": 2041154,
+      "home_fotmob_url": "https://www.fotmob.com/teams/8349/overview/aik",
+      "away_fotmob_url": "https://www.fotmob.com/teams/8248/overview/hammarby",
+      "odds_capture": {
+        "provider": "433足球网",
+        "source_url": "https://www.433.cool/zqzhishu/data/1332184.html",
+        "bookmaker": "Bet 365",
+        "captured_at": "2026-08-30T13:07:50.884549+08:00",
+        "odds": {"home_win": "5.25", "draw": "4.5", "away_win": "1.55"}
+      }
+    },
+    {
+      "match_id": 2041156,
+      "home_fotmob_url": "https://www.fotmob.com/teams/8402/overview/bod-glimt",
+      "away_fotmob_url": "https://www.fotmob.com/teams/8422/overview/rosenborg",
+      "odds_capture": {
+        "provider": "433足球网",
+        "source_url": "https://www.433.cool/zqzhishu/data/1332185.html",
+        "bookmaker": "Bet 365",
+        "captured_at": "2026-08-30T13:07:59.620434+08:00",
+        "odds": {"home_win": "1.36", "draw": "5.5", "away_win": "7"}
+      }
+    },
+    {
+      "match_id": 2041138,
+      "home_fotmob_url": "https://www.fotmob.com/teams/8478/overview/viking",
+      "away_fotmob_url": "https://www.fotmob.com/teams/8404/overview/aalesund",
+      "odds_capture": {
+        "provider": "433足球网",
+        "source_url": "https://www.433.cool/zqzhishu/data/1333329.html",
+        "bookmaker": "Bet 365",
+        "captured_at": "2026-08-30T13:07:40.066947+08:00",
+        "odds": {"home_win": "1.27", "draw": "6.25", "away_win": "8.5"}
+      }
+    }
+  ]
+}

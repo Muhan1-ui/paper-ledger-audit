@@ -1,0 +1,12 @@
+{
+  "match_id": 2041154,
+  "home_fotmob_url": "https://www.fotmob.com/teams/8349/overview/aik",
+  "away_fotmob_url": "https://www.fotmob.com/teams/8248/overview/hammarby",
+  "odds_capture": {
+    "provider": "433足球网",
+    "source_url": "https://www.433.cool/zqzhishu/data/1332184.html",
+    "bookmaker": "Bet 365",
+    "captured_at": "2026-08-30T13:07:50.884549+08:00",
+    "odds": {"home_win": "5.25", "draw": "4.5", "away_win": "1.55"}
+  }
+}

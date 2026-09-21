@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal",
+  "captures": [
+    {
+      "match_id": "周二001",
+      "kickoff_at": "2026-08-25T18:30:00+08:00",
+      "captured_at": "2026-08-25T03:15:55.275Z",
+      "source_url": "https://www.oddsportal.com/football/h2h/gimcheon-sangmu-IaoBca9i/jeonbuk-x0hNfcgA/#dzYlxS8t",
+      "bookmaker": "1xBet",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "3.15",
+        "draw": "3.42",
+        "away_win": "2.19"
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal",
+  "captures": [
+    {
+      "match_id": "周一201",
+      "kickoff_at": "2026-07-28T01:00:00+08:00",
+      "captured_at": "2026-07-27T15:29:35.257099+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/aik-lzqk4S68/hacken-W6u0d7B3/",
+      "source_quality": "named_bookmaker",
+      "bookmaker": "bet365",
+      "odds": {
+        "home_win": "1.81",
+        "draw": "4",
+        "away_win": "3.6"
+      }
+    }
+  ]
+}

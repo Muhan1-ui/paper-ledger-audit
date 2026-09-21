@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal user-supplied screenshot",
+  "captures": [
+    {
+      "match_id": "周六207",
+      "kickoff_at": "2026-07-25T23:30:00+08:00",
+      "captured_at": "2026-07-25T19:49:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/kalmar-rkrUu5ae/mjallby-S0XtXM1E/#SUKFpNDs:1X2;2",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "2.55",
+        "draw": "3.40",
+        "away_win": "2.57"
+      }
+    }
+  ]
+}

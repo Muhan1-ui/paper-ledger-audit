@@ -1,0 +1,19 @@
+{
+  "example_notice": "HYPOTHETICAL EXAMPLE ONLY. This is not a real fixture, price, prediction, or result.",
+  "provider": "hypothetical-export",
+  "captures": [
+    {
+      "match_id": "20990101001",
+      "kickoff_at": "2099-01-01T20:00:00+08:00",
+      "captured_at": "2099-01-01T18:00:00+08:00",
+      "source_url": "https://odds.example.test/matches/20990101001",
+      "bookmaker": "ExampleBook",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "2",
+        "draw": "3",
+        "away_win": "6"
+      }
+    }
+  ]
+}

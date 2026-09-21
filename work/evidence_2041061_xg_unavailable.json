@@ -1,0 +1,11 @@
+{
+  "record_type": "collection_failure",
+  "match_id": "周三004",
+  "evidence_kind": "xg",
+  "attempted_at": "2026-08-26T12:11:11.6505984+08:00",
+  "collector": "fotmob-xg-evidence",
+  "parser_version": "2026.08.26",
+  "reason_code": "incomplete_data",
+  "reason": "FotMob reports Newcastle United in the Premier League with one current-season match and West Bromwich Albion in the Championship with two. These are different competitions and insufficient non-comparable samples, so no combined pre-match xG formula was produced.",
+  "attempted_source_url": "https://www.fotmob.com/teams/10261/overview/newcastle-united"
+}

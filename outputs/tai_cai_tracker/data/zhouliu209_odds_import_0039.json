@@ -1,0 +1,31 @@
+{
+  "provider": "OddsPortal user-supplied screenshot and China Sports Lottery official fixed-prize page",
+  "captures": [
+    {
+      "match_id": "周六209",
+      "kickoff_at": "2026-07-26T05:30:00+08:00",
+      "captured_at": "2026-07-25T18:04:27+08:00",
+      "source_url": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040620",
+      "bookmaker": null,
+      "source_quality": "unattributed",
+      "odds": {
+        "home_win": "1.23",
+        "draw": "5.00",
+        "away_win": "8.60"
+      }
+    },
+    {
+      "match_id": "周六209",
+      "kickoff_at": "2026-07-26T05:30:00+08:00",
+      "captured_at": "2026-07-26T00:39:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/chapecoense-sc-jcQV3XP6/santos-n3QdnjFB/#UkF6bbHF:ht-ft;2;35",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "1.33",
+        "draw": "5.00",
+        "away_win": "8.50"
+      }
+    }
+  ]
+}

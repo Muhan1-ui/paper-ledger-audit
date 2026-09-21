@@ -1,0 +1,31 @@
+{
+  "provider": "OddsPortal user-supplied screenshot and China Sports Lottery user-supplied official-page screenshot",
+  "captures": [
+    {
+      "match_id": "周六211",
+      "kickoff_at": "2026-07-26T10:30:00+08:00",
+      "captured_at": "2026-07-25T19:53:16+08:00",
+      "source_url": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040622",
+      "bookmaker": null,
+      "source_quality": "unattributed",
+      "odds": {
+        "home_win": "1.64",
+        "draw": "4.05",
+        "away_win": "3.67"
+      }
+    },
+    {
+      "match_id": "周六211",
+      "kickoff_at": "2026-07-26T10:30:00+08:00",
+      "captured_at": "2026-07-26T00:56:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/los-angeles-galaxy-U3ebh62R/san-jose-earthquakes-x05z14ue/#fqc5ZOwI:ht-ft;2;31",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "1.81",
+        "draw": "3.90",
+        "away_win": "3.75"
+      }
+    }
+  ]
+}

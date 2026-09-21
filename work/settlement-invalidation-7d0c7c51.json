@@ -1,0 +1,15 @@
+{
+  "settlement_hash": "7d0c7c51c4f04c16036f7de016012b437d291370cd8acb98def8b2fdbbcc2ded",
+  "prediction_hash": "f1db72c2a948ee4b2d85132c5ad53c9cc2c1c515043dfe579e6c3f9251524c78",
+  "invalidated_at": "2026-09-08T19:58:50.9067248+08:00",
+  "reason_code": "identity_mismatch",
+  "reason": "The frozen fixture is 2026-09-09 Dortmund vs Villarreal, but the linked official result is 2026-09-02 Stoke City vs Norwich under a reused weekday sequence.",
+  "official_result_url": "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&clientCode=3001&matchDate=2026-09-02&pageSize=100&pageNo=1",
+  "official_result_identity": {
+    "match_id": "2041222",
+    "match_num": "\u5468\u4e8c009",
+    "match_date": "2026-09-02",
+    "home_team": "\u65af\u6258\u514b\u57ce",
+    "away_team": "\u8bfa\u7ef4\u5947"
+  }
+}

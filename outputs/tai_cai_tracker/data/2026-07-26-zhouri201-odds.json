@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal user-supplied screenshot",
+  "captures": [
+    {
+      "match_id": "周日201",
+      "kickoff_at": "2026-07-26T18:30:00+08:00",
+      "captured_at": "2026-07-26T15:20:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/seoul-8tzeYeHp/ulsan-hyundai-EVEwgyOM/#b59Hqhfo:ht-ft;2;33",
+      "bookmaker": "bet365",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "1.73",
+        "draw": "3.60",
+        "away_win": "4.20"
+      }
+    }
+  ]
+}

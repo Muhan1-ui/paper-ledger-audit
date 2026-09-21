@@ -1,0 +1,18 @@
+{
+  "provider": "Soccer's Finest",
+  "captures": [
+    {
+      "match_id": "周五201",
+      "kickoff_at": "2026-07-25T00:00:00+08:00",
+      "captured_at": "2026-07-24T16:55:07+08:00",
+      "source_url": "https://soccersfinest.com/event/ff-jaro-vs-sjk-1495739",
+      "bookmaker": null,
+      "source_quality": "unattributed",
+      "odds": {
+        "home_win": "2.88",
+        "draw": "3.50",
+        "away_win": "2.15"
+      }
+    }
+  ]
+}

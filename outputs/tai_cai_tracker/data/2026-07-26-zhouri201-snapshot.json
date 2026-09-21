@@ -1,0 +1,23 @@
+{
+  "market": "SPF",
+  "match_id": "周日201",
+  "kickoff_at": "2026-07-26T18:30:00+08:00",
+  "captured_at": "2026-07-26T15:20:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040623",
+    "S2": "https://www.oddsportal.com/football/h2h/seoul-8tzeYeHp/ulsan-hyundai-EVEwgyOM/#b59Hqhfo:ht-ft;2;33"
+  },
+  "fixed_prizes": {
+    "home_win": "1.63",
+    "draw": "3.55",
+    "away_win": "4.26"
+  },
+  "european_odds": {
+    "capture_hash": "f87c2deab7f3f67ed472e44a859d3b9fdfafad1fb95d9fcb1628175219f0da99"
+  },
+  "match_context": {
+    "competition": "K League 1",
+    "home_team": "Seoul FC",
+    "away_team": "Ulsan Hyundai"
+  }
+}

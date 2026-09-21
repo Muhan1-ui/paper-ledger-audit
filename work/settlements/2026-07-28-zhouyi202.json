@@ -1,0 +1,12 @@
+{
+  "snapshot_hash": "ceed5bf0e7050def3cb4200f0197db49c50574448eb8b33feab60fbc429ccffe",
+  "official_result_url": "https://m.sporttery.cn/mjc/zqsj/?tab=result",
+  "final_score": {"home": 4, "away": 0},
+  "markets": {
+    "spf": "home_win",
+    "hhad": "home_win",
+    "crs": "4:0",
+    "ttg": "4",
+    "hafu": "HH"
+  }
+}

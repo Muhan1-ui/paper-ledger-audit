@@ -1,0 +1,18 @@
+{
+  "provider": "OddsPortal",
+  "captures": [
+    {
+      "match_id": "周二002",
+      "kickoff_at": "2026-08-25T18:30:00+08:00",
+      "captured_at": "2026-08-25T13:47:37.4509023+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/jeju-sk-vFZJewv4/pohang-KIIIipI5/#Gxljz6wg",
+      "bookmaker": "1xBet",
+      "source_quality": "named_bookmaker",
+      "odds": {
+        "home_win": "2.33",
+        "draw": "3.20",
+        "away_win": "3.07"
+      }
+    }
+  ]
+}

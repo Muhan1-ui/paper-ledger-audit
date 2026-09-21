@@ -1,0 +1,18 @@
+{
+  "market": "SPF",
+  "match_id": "周五202",
+  "kickoff_at": "2026-07-25T01:00:00+08:00",
+  "captured_at": "2026-07-24T17:16:57+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqsj/?tab=concern",
+    "S2": "https://sgodds.com/football/current-odds/Vasteras-vs-Orgryte-140551"
+  },
+  "fixed_prizes": {
+    "home_win": "1.49",
+    "draw": "3.95",
+    "away_win": "4.88"
+  },
+  "european_odds": {
+    "capture_hash": "39112dae4fa7487a17059c4233d1645bb19f38fb62db87fcdff603f9971e671a"
+  }
+}

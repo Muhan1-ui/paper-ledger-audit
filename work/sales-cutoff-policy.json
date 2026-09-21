@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "sales_day_basis": "run_date",
+  "weekday_cutoff": "22:00",
+  "weekend_cutoff": "23:00",
+  "cutoff_window_start_minutes": 60,
+  "cutoff_window_end_minutes": 30,
+  "policy_source": "operator_observed_schedule"
+}

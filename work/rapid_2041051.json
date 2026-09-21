@@ -1,0 +1,17 @@
+{
+  "match_id": 2041051,
+  "captured_at": "2026-08-25T15:50:17.5660233+08:00",
+  "home_fotmob_url": "https://www.fotmob.com/teams/101915/overview/al-ettifaq",
+  "away_fotmob_url": "https://www.fotmob.com/teams/101918/overview/al-nassr-fc",
+  "odds_capture": {
+    "provider": "OddsPortal",
+    "source_url": "https://www.oddsportal.com/football/h2h/al-ettifaq-fc-ncrXAWGn/al-nassr-h4I89ZuE/#dvszttYI:1X2;2",
+    "bookmaker": "1xBet",
+    "captured_at": "2026-08-25T15:50:17.5660233+08:00",
+    "odds": {
+      "home_win": "9.50",
+      "draw": "6.57",
+      "away_win": "1.23"
+    }
+  }
+}

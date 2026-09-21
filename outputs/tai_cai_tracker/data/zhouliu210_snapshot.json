@@ -1,0 +1,23 @@
+{
+  "market": "SPF",
+  "match_id": "周六210",
+  "kickoff_at": "2026-07-26T09:30:00+08:00",
+  "captured_at": "2026-07-26T00:54:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040621",
+    "S2": "https://www.oddsportal.com/football/h2h/fc-dallas-4GtbI4Q1/san-diego-fc-EuGkBf33/#pfctuT9t:ht-ft;2;31"
+  },
+  "fixed_prizes": {
+    "home_win": "2.25",
+    "draw": "3.60",
+    "away_win": "2.46"
+  },
+  "european_odds": {
+    "capture_hash": "32aec1e16341dc25858277949d877696dfb689b8fafbc95fda4475aa48c97f75"
+  },
+  "match_context": {
+    "competition": "MLS",
+    "home_team": "FC Dallas",
+    "away_team": "San Diego FC"
+  }
+}

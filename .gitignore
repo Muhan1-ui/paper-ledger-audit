@@ -1,0 +1,41 @@
+# Python bytecode and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Transient tracker process and test-run artifacts
+work/logs/*.pid
+work/logs/*.err
+work/.crawler-runtime/
+work/*.pid
+work/*.out
+work/*.err
+work/*test*.exit
+outputs/tai_cai_tracker/data/paper_ledger.jsonl.lock
+work/*test*.out
+work/*test*.err
+work/*test*.log
+work/*test*.txt
+work/*regression*.out
+work/*regression*.err
+work/*verification*.out
+work/*verification*.err
+work/*verification*.log
+work/logs/*test*.out
+work/logs/*test*.err
+work/logs/*test*.log
+work/logs/*test*.txt
+work/logs/*.stdout.txt
+work/logs/*.stderr.txt
+
+# Operating system and editor metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

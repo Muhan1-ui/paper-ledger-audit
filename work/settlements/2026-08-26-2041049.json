@@ -1,0 +1,12 @@
+{
+  "snapshot_hash": "a70953da240000cde8d80f4ce5fc8ce92072b57a757d61fd0e1e113f0a579c02",
+  "official_result_url": "https://webapi.sporttery.cn/gateway/uniform/fb/getMatchDataPageListV1.qry?method=result&clientCode=3001",
+  "final_score": {"home": 0, "away": 0},
+  "markets": {
+    "spf": "draw",
+    "hhad": "home_win",
+    "crs": "0:0",
+    "ttg": "0",
+    "hafu": "DD"
+  }
+}

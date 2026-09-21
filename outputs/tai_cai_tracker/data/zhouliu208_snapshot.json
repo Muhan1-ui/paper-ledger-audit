@@ -1,0 +1,23 @@
+{
+  "market": "SPF",
+  "match_id": "周六208",
+  "kickoff_at": "2026-07-26T05:30:00+08:00",
+  "captured_at": "2026-07-25T19:58:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040619",
+    "S2": "https://www.oddsportal.com/football/h2h/athletico-pr-UoAxb1Tq/internacional-tSCiHj0I/#IVTWoLX9:1X2;2"
+  },
+  "fixed_prizes": {
+    "home_win": "1.94",
+    "draw": "3.10",
+    "away_win": "3.43"
+  },
+  "european_odds": {
+    "capture_hash": "391b8bb46236222df6b9ba89a1ed7097cc0a64e5ebd191eb182ee5de9b1d88dc"
+  },
+  "match_context": {
+    "competition": "Brazil Serie A",
+    "home_team": "Athletico-PR",
+    "away_team": "Internacional"
+  }
+}

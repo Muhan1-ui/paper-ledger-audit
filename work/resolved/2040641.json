@@ -1,0 +1,63 @@
+{
+  "fotmob_away": {
+    "candidate": {
+      "away_team": "索尔纳",
+      "home_team": "索尔纳",
+      "kickoff_at": null,
+      "source_url": "https://www.fotmob.com/teams/8349/stats/aik/teams"
+    },
+    "confidence": "high",
+    "evidence": [
+      "home_similarity=1.00",
+      "away_similarity=1.00",
+      "date_score=0.00"
+    ],
+    "score": 0.9,
+    "source_url": "https://www.fotmob.com/teams/8349/stats/aik/teams",
+    "status": "candidate"
+  },
+  "fotmob_home": {
+    "candidate": {
+      "away_team": "赫根",
+      "home_team": "赫根",
+      "kickoff_at": null,
+      "source_url": "https://www.fotmob.com/teams/8428/stats/hacken/teams"
+    },
+    "confidence": "high",
+    "evidence": [
+      "home_similarity=1.00",
+      "away_similarity=1.00",
+      "date_score=0.00"
+    ],
+    "score": 0.9,
+    "source_url": "https://www.fotmob.com/teams/8428/stats/hacken/teams",
+    "status": "candidate"
+  },
+  "oddsportal": {
+    "candidate": {
+      "away_team": "索尔纳",
+      "competition": "Allsvenskan",
+      "home_team": "赫根",
+      "kickoff_at": "2026-07-28T01:00:00+08:00",
+      "source_url": "https://www.oddsportal.com/football/h2h/aik-lzqk4S68/hacken-W6u0d7B3/"
+    },
+    "confidence": "high",
+    "evidence": [
+      "home_similarity=1.00",
+      "away_similarity=1.00",
+      "date_score=1.00"
+    ],
+    "score": 1.0,
+    "source_url": "https://www.oddsportal.com/football/h2h/aik-lzqk4S68/hacken-W6u0d7B3/",
+    "status": "candidate"
+  },
+  "sporttery": {
+    "away_team": "索尔纳",
+    "competition": "瑞超",
+    "home_team": "赫根",
+    "kickoff_at": "2026-07-28T01:00:00+08:00",
+    "match_id": 2040641,
+    "match_num": "周一201",
+    "official_source_url": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040641"
+  }
+}

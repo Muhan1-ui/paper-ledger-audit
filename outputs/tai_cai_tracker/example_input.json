@@ -1,0 +1,21 @@
+{
+  "example_notice": "HYPOTHETICAL EXAMPLE ONLY. This is not a real fixture, price, prediction, or result.",
+  "market": "SPF",
+  "match_id": "20990101001",
+  "kickoff_at": "2099-01-01T20:00:00+08:00",
+  "captured_at": "2099-01-01T18:00:00+08:00",
+  "source_urls": {
+    "S1": "https://official.example.test/matches/20990101001",
+    "S2": "https://odds.example.test/matches/20990101001"
+  },
+  "fixed_prizes": {
+    "home_win": "2",
+    "draw": "3",
+    "away_win": "6"
+  },
+  "xg_inputs": {
+    "source_url": "https://stats.example.test/matches/20990101001",
+    "home_xg": "1.45",
+    "away_xg": "1.05"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "market": "SPF",
+  "match_id": "\u5468\u516d201",
+  "kickoff_at": "2026-07-25T18:30:00+08:00",
+  "captured_at": "2026-07-25T12:52:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/zqlszl/bssj/?mid=2040612",
+    "S2": "https://www.oddsportal.com/football/h2h/daejeon-2NTiQXjI/gimcheon-sangmu-IaoBca9i/#QkEdB4mQ:1X2;2"
+  },
+  "match_context": {
+    "competition": "K League 1",
+    "home_team": "Gimcheon Sangmu",
+    "away_team": "Daejeon"
+  },
+  "fixed_prizes": {
+    "home_win": "2.85",
+    "draw": "3.05",
+    "away_win": "2.22"
+  },
+  "european_odds": {
+    "capture_hash": "99d40f7c9b17c6904dafe4199b64c183b96fbf1fcccc74f52beddf3f1ab7b3e2"
+  }
+}

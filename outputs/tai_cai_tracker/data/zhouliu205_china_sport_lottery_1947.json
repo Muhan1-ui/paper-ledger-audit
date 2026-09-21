@@ -1,0 +1,18 @@
+{
+  "provider": "China Sports Lottery official fixed-prize page",
+  "captures": [
+    {
+      "match_id": "周六205",
+      "kickoff_at": "2026-07-25T22:00:00+08:00",
+      "captured_at": "2026-07-25T19:47:30+08:00",
+      "source_url": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040616",
+      "bookmaker": null,
+      "source_quality": "unattributed",
+      "odds": {
+        "home_win": "1.86",
+        "draw": "3.50",
+        "away_win": "3.27"
+      }
+    }
+  ]
+}

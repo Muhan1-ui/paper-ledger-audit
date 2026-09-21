@@ -1,0 +1,23 @@
+{
+  "market": "SPF",
+  "match_id": "周六204",
+  "kickoff_at": "2026-07-25T21:30:00+08:00",
+  "captured_at": "2026-07-25T18:18:00+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/zqlszl/bssj/index.html?mid=2040615",
+    "S2": "https://www.oddsportal.com/football/h2h/ac-oulu-Y35Jer59/mariehamn-C8bOhcyj/#zksrIHq9:1X2;2"
+  },
+  "fixed_prizes": {
+    "home_win": "5.55",
+    "draw": "4.35",
+    "away_win": "1.39"
+  },
+  "european_odds": {
+    "capture_hash": "b0cc893efdaec632b0ddc121a00f25da47e29d9ce9f008c638e3f57fa15d5726"
+  },
+  "match_context": {
+    "competition": "Veikkausliiga",
+    "home_team": "Mariehamn",
+    "away_team": "AC Oulu"
+  }
+}

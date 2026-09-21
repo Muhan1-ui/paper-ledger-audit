@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "market": "SPF",
+  "match_id": "周一201",
+  "kickoff_at": "2026-07-28T01:00:00+08:00",
+  "captured_at": "2026-07-27T15:29:37.230205+08:00",
+  "source_urls": {
+    "S1": "https://m.sporttery.cn/mjc/zqgdjjv1/?mid=2040641",
+    "S2": "https://www.oddsportal.com/football/h2h/aik-lzqk4S68/hacken-W6u0d7B3/"
+  },
+  "fixed_prizes": {
+    "home_win": "1.79",
+    "draw": "3.40",
+    "away_win": "3.62"
+  },
+  "european_odds": {
+    "capture_hash": "0bf3a0acff3e36ba2febba337394ce61200ced928087cda0230dffbdb26f7349"
+  },
+  "match_context": {
+    "competition": "瑞超",
+    "home_team": "赫根",
+    "away_team": "索尔纳"
+  },
+  "xg_inputs": {
+    "source_url": "https://www.fotmob.com/teams/8428/stats/hacken/teams",
+    "home_xg": "1.765384615384615384615384615",
+    "away_xg": "1.326923076923076923076923077",
+    "model_version": "poisson-v1",
+    "model_weight": "0.40",
+    "evidence": {
+      "source_url": "https://www.fotmob.com/teams/8428/stats/hacken/teams",
+      "published_at": "2026-07-26T22:54:44+00:00",
+      "competition": "Allsvenskan",
+      "season": "2026",
+      "sample_matches": 13,
+      "scope": "league_total",
+      "home_attack_xg": "26.4",
+      "home_defense_xga": "17.1",
+      "away_attack_xg": "17.4",
+      "away_defense_xga": "19.5",
+      "formula": "league_total: home_xg=mean(home_attack_xg/sample_matches, away_defense_xga/sample_matches); away_xg=mean(away_attack_xg/sample_matches, home_defense_xga/sample_matches)"
+    }
+  }
+}
