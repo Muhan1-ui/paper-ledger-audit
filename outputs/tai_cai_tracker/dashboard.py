@@ -1,8 +1,11 @@
 """Read-only dashboard projections for the paper calibration tracker."""
 
+import argparse
 import json
+import socket
 from datetime import datetime, timezone
 from decimal import Decimal
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Mapping
 
@@ -271,3 +274,107 @@ def build_summary(ledger_path, scheduler_log_path=None, now=None):
         "recent_records": _recent_records(records),
         "warnings": warnings,
     }
+
+
+_LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+_DASHBOARD_HTML_PATH = Path(__file__).with_name("static") / "dashboard.html"
+
+
+def _validate_loopback_host(host):
+    if host not in _LOOPBACK_HOSTS:
+        raise ValueError(
+            "Dashboard server host must be a loopback address: "
+            "127.0.0.1, ::1, or localhost"
+        )
+
+
+def _dashboard_handler(ledger_path, scheduler_log_path):
+    class DashboardHandler(BaseHTTPRequestHandler):
+        def _send_json(self, status, payload):
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _send_summary_error(self, error):
+            self._send_json(500, {"error": str(error)})
+
+        def do_GET(self):
+            if self.path == "/api/summary":
+                try:
+                    self._send_json(200, build_summary(ledger_path, scheduler_log_path))
+                except Exception as error:
+                    self._send_summary_error(error)
+                return
+
+            if self.path == "/api/health":
+                try:
+                    build_summary(ledger_path, scheduler_log_path)
+                except Exception as error:
+                    self._send_summary_error(error)
+                else:
+                    self._send_json(200, {"status": "ok"})
+                return
+
+            if self.path == "/":
+                try:
+                    body = _DASHBOARD_HTML_PATH.read_bytes()
+                except OSError:
+                    self._send_json(500, {"error": "Dashboard page is unavailable."})
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+
+            self._send_json(404, {"error": "Not found."})
+
+        def log_message(self, format, *args):
+            return
+
+    return DashboardHandler
+
+
+def create_server(ledger_path, scheduler_log_path=None, host="127.0.0.1", port=8765):
+    """Create a loopback-only HTTP server for read-only dashboard views."""
+    _validate_loopback_host(host)
+    server_class = ThreadingHTTPServer
+    if host == "::1":
+        class IPv6ThreadingHTTPServer(ThreadingHTTPServer):
+            address_family = socket.AF_INET6
+
+        server_class = IPv6ThreadingHTTPServer
+    return server_class((host, port), _dashboard_handler(ledger_path, scheduler_log_path))
+
+
+def main(argv=None):
+    """Run the dashboard HTTP server until interrupted."""
+    parser = argparse.ArgumentParser(description="Serve the local TaiCaiTracker dashboard.")
+    parser.add_argument("--ledger-path", required=True)
+    parser.add_argument("--scheduler-log-path")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8765)
+    arguments = parser.parse_args(argv)
+    try:
+        server = create_server(
+            arguments.ledger_path,
+            arguments.scheduler_log_path,
+            host=arguments.host,
+            port=arguments.port,
+        )
+    except ValueError as error:
+        parser.error(str(error))
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()
