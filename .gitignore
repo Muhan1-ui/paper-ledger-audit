@@ -44,3 +44,12 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# Local Python virtual environment
+.venv/
+
+# Local Chrome profile directories used for dashboard captures
+work/chrome-*-profile/
+
+# Stray dashboard screenshots
+work/*.png
