@@ -1,0 +1,6 @@
+fastapi==0.135.2
+uvicorn[standard]==0.53.0
+sqlalchemy==2.0.48
+pymysql==1.1.2
+tzdata==2025.2
+cryptography==48.0.0
