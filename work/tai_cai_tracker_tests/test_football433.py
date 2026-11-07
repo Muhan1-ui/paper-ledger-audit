@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from outputs.tai_cai_tracker.football433 import (
     _433_event_days,
@@ -27,6 +27,26 @@ DETAIL_HTML = """
 
 
 class Football433Tests(unittest.TestCase):
+    def test_detail_request_uses_the_configured_public_source_proxy(self):
+        from outputs.tai_cai_tracker.football433 import _http_get
+
+        response = MagicMock()
+        response.read.return_value = b"<html>detail</html>"
+        opener = MagicMock()
+        opener.open.return_value.__enter__.return_value = response
+        proxy = "http://127.0.0.1:7892"
+
+        with patch.dict("os.environ", {"TAICAI_HTTP_PROXY": proxy}), \
+             patch("outputs.tai_cai_tracker.football433.coordinated_public_request", side_effect=lambda _url, load: load()), \
+             patch("outputs.tai_cai_tracker.football433.ProxyHandler") as proxy_handler, \
+             patch("outputs.tai_cai_tracker.football433.build_opener", return_value=opener):
+            self.assertEqual(
+                _http_get("https://www.433.cool/zqzhishu/data/1.html"),
+                "<html>detail</html>",
+            )
+
+        proxy_handler.assert_called_once_with({"http": proxy, "https": proxy})
+
     def test_event_days_fall_back_to_previous_list_day_for_after_midnight_fixture(self):
         self.assertEqual(
             _433_event_days("2026-09-08T00:30:00+08:00"),
@@ -66,6 +86,7 @@ class Football433Tests(unittest.TestCase):
 
     def test_list_page_submits_requested_page_index_in_post_payload(self):
         captured_requests = []
+        proxy = "http://127.0.0.1:7892"
 
         class Response:
             def read(self):
@@ -82,10 +103,13 @@ class Football433Tests(unittest.TestCase):
                 captured_requests.append((request, timeout))
                 return Response()
 
-        with patch(
+        with patch.dict("os.environ", {"TAICAI_HTTP_PROXY": proxy}), \
+             patch(
             "outputs.tai_cai_tracker.football433.coordinated_public_request",
             side_effect=lambda _url, load: load(),
         ), patch(
+            "outputs.tai_cai_tracker.football433.ProxyHandler",
+        ) as proxy_handler, patch(
             "outputs.tai_cai_tracker.football433.build_opener",
             return_value=Opener(),
         ):
@@ -95,6 +119,7 @@ class Football433Tests(unittest.TestCase):
         self.assertEqual(timeout, 20)
         self.assertIn(b"pageindex=2", request.data)
         self.assertIn(b"searchdate=2026-09-08", request.data)
+        proxy_handler.assert_called_once_with({"http": proxy, "https": proxy})
 
     def test_batch_discovery_reads_list_pages_once_for_multiple_matches(self):
         first = [1331072, 1787769900000, 0, 0, False, False, False, False, "", 33, 636, 0, 0,

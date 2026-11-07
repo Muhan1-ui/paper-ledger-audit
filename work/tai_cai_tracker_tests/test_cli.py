@@ -1575,6 +1575,19 @@ class CliWorkflowTests(unittest.TestCase):
 
         self.assertEqual(output.getvalue(), "英超\n")
 
+    def test_cli_configures_utf8_stderr_for_chinese_error_messages(self):
+        class ReconfigurableErrorStream:
+            encoding = "gbk"
+
+            def reconfigure(self, *, encoding):
+                self.encoding = encoding
+
+        error_stream = ReconfigurableErrorStream()
+        with patch("sys.stderr", error_stream):
+            tracker_cli._configure_utf8_stdout()
+
+        self.assertEqual(error_stream.encoding, "utf-8")
+
     def test_daily_freeze_status_includes_same_day_blocked_scan_not_in_ledger(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             ledger_path = Path(temporary_directory) / "ledger.jsonl"

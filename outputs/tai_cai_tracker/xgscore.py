@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -9,7 +10,7 @@ from html import unescape
 from urllib.parse import urlsplit
 from urllib.request import ProxyHandler, Request, build_opener
 
-from .transport import coordinated_public_request
+from .transport import coordinated_public_request, proxy_mapping
 
 
 BASE_URL = "https://xgscore.io"
@@ -529,7 +530,7 @@ def _kickoff_matches(displayed, kickoff_at):
 def _http_get(source_url):
     def load():
         request = Request(source_url, headers={"Accept": "text/html", "User-Agent": "Mozilla/5.0"})
-        opener = build_opener(ProxyHandler({}))
+        opener = build_opener(ProxyHandler(proxy_mapping(os.environ)))
         with opener.open(request, timeout=20) as response:
             raw = response.read()
         return raw.decode("utf-8"), hashlib.sha256(raw).hexdigest()

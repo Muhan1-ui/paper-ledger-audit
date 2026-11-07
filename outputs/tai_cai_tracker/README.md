@@ -130,6 +130,14 @@ python -m outputs.tai_cai_tracker.cli report `
 python -m outputs.tai_cai_tracker.cli report `
   outputs/tai_cai_tracker/data/paper_ledger.jsonl `
   --json
+
+python -m outputs.tai_cai_tracker.cli review `
+  outputs/tai_cai_tracker/data/paper_ledger.jsonl `
+  --match-id 周六030
+
+python -m outputs.tai_cai_tracker.cli review `
+  outputs/tai_cai_tracker/data/paper_ledger.jsonl `
+  --json
 ```
 
 `odds-import` appends one or more immutable odds-capture records and prints
@@ -158,6 +166,39 @@ by their immutable source tier: legacy and xG/model-derived snapshots are
 `model_derived`; an official-only five-market baseline is
 `official_market_baseline`. These groups are descriptive only: they do not
 choose a model or alter any future prediction weight.
+
+`review` is a read-only local review Agent. With `--match-id`, it separates
+frozen model output, verified official settlement, and evidence/data gaps for
+one match, retaining ledger hashes and source URLs. It never fetches external
+pages, edits the JSONL ledger, infers an unverified result, or provides purchase
+or funding advice. Without `--match-id`, it returns a compact global ledger and
+calibration summary; `--json` is suitable for the dashboard or other local tools.
+
+### Optional DeepSeek narration
+
+The local review stays available without any API configuration. To let a
+DeepSeek-compatible model turn one already-derived review into a Chinese
+explanation, run this once and paste the API key when prompted. The input is
+hidden and is saved only in the project-root `.env` file, which is ignored by
+Git:
+
+```powershell
+python -m outputs.tai_cai_tracker.cli configure-deepseek
+
+python -m outputs.tai_cai_tracker.cli review `
+  outputs/tai_cai_tracker/data/paper_ledger.jsonl `
+  --match-id 周六030 --ai
+```
+
+`--ai` sends only the derived structured review for the selected scope to the
+configured endpoint. It does not grant the model write access, collection
+access, or authority to infer a missing official result. Use `--json` together
+with `--ai` when the model narration and the exact local context both need to
+be retained by another local tool. The model name is configurable because the
+identifier enabled for an account or compatible gateway may differ from the
+default `deepseek-v4`: pass `--model <model-name>` or `--base-url <endpoint>` to
+`configure-deepseek` when needed. Environment variables still take precedence
+over the local `.env` file for deployments and CI.
 
 ## Auditable Collection Events
 

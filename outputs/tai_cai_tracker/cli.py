@@ -1,6 +1,7 @@
 """Offline command line interface for the paper-only calibration tracker."""
 
 import argparse
+import getpass
 import json
 import os
 import re
@@ -58,6 +59,15 @@ from .pregame import (
     quality_gate,
 )
 from .report import calibration_report
+from .deepseek_review import (
+    DEFAULT_BASE_URL,
+    DEFAULT_MODEL,
+    DeepSeekReviewClient,
+    save_local_configuration,
+)
+from .service_config import save_database_configuration
+from .service_store import create_configured_store
+from .review_agent import build_review, format_review
 from .resolver import (
     adopted_source_aliases,
     cached_fotmob_team_identity,
@@ -4412,6 +4422,45 @@ def _build_parser():
     report_parser.add_argument("ledger_path")
     report_parser.add_argument("--json", action="store_true", dest="as_json")
 
+    review_parser = commands.add_parser(
+        "review", help="generate a read-only, auditable local review"
+    )
+    review_parser.add_argument("ledger_path")
+    review_parser.add_argument("--match-id")
+    review_parser.add_argument("--json", action="store_true", dest="as_json")
+    review_parser.add_argument(
+        "--ai", action="store_true", help="use the configured DeepSeek API for a read-only narration"
+    )
+    review_parser.add_argument("--model", help="override DEEPSEEK_MODEL")
+    review_parser.add_argument("--base-url", help="override DEEPSEEK_BASE_URL")
+    review_parser.add_argument("--timeout", type=int, default=30)
+
+    configure_deepseek_parser = commands.add_parser(
+        "configure-deepseek", help="save a local DeepSeek configuration for review --ai"
+    )
+    configure_deepseek_parser.add_argument("--model", default=DEFAULT_MODEL)
+    configure_deepseek_parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+
+    configure_database_parser = commands.add_parser(
+        "configure-database", help="save local MySQL settings for the service projection"
+    )
+    configure_database_parser.add_argument("--host", default="127.0.0.1")
+    configure_database_parser.add_argument("--port", type=int, default=3306)
+    configure_database_parser.add_argument("--username", default="taicai_app")
+    configure_database_parser.add_argument("--database", default="taicai_tracker")
+
+    sync_projection_parser = commands.add_parser(
+        "sync-service-projection", help="project immutable ledger records into the configured MySQL read model"
+    )
+    sync_projection_parser.add_argument("ledger_path")
+
+    serve_api_parser = commands.add_parser(
+        "serve-api", help="serve the configured MySQL read model through FastAPI"
+    )
+    serve_api_parser.add_argument("ledger_path")
+    serve_api_parser.add_argument("--host", default="127.0.0.1")
+    serve_api_parser.add_argument("--port", type=int, default=8000)
+
     all_market_snapshot_parser = commands.add_parser("all-market-snapshot")
     all_market_snapshot_parser.add_argument("input_path")
     all_market_snapshot_parser.add_argument("ledger_path")
@@ -4811,13 +4860,14 @@ def _build_parser():
 
 
 def _configure_utf8_stdout():
-    """Keep JSON output readable through Windows PowerShell pipelines and logs."""
-    reconfigure = getattr(sys.stdout, "reconfigure", None)
-    if callable(reconfigure):
-        try:
-            reconfigure(encoding="utf-8")
-        except (OSError, ValueError):
-            pass
+    """Keep Chinese output readable through Windows PowerShell pipelines and logs."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8")
+            except (OSError, ValueError):
+                pass
 
 
 def main(argv=None):
@@ -5267,6 +5317,58 @@ def main(argv=None):
                     ensure_ascii=False,
                     sort_keys=True,
                 ))
+        elif arguments.command == "review":
+            records = read_records(arguments.ledger_path)
+            if arguments.ai:
+                result = DeepSeekReviewClient.from_environment(
+                    model=arguments.model,
+                    base_url=arguments.base_url,
+                    timeout=arguments.timeout,
+                ).review(records, arguments.match_id)
+            else:
+                result = build_review(records, arguments.match_id)
+            if arguments.as_json:
+                print(json.dumps(result, default=_json_default, ensure_ascii=False, sort_keys=True))
+            elif arguments.ai:
+                print(result["ai_review"])
+            else:
+                print(format_review(result))
+        elif arguments.command == "configure-deepseek":
+            api_key = getpass.getpass("请输入 DeepSeek API Key（输入不会显示）: ")
+            path = save_local_configuration(
+                api_key,
+                model=arguments.model,
+                base_url=arguments.base_url,
+            )
+            print(f"DeepSeek 本地配置已保存到 {path}。")
+        elif arguments.command == "configure-database":
+            password = getpass.getpass("请输入 taicai_app 的 MySQL 密码（输入不会显示）: ")
+            path = save_database_configuration(
+                password,
+                host=arguments.host,
+                port=arguments.port,
+                username=arguments.username,
+                database=arguments.database,
+            )
+            print(f"MySQL 本地配置已保存到 {path}。")
+        elif arguments.command == "sync-service-projection":
+            result = create_configured_store().sync_records(read_records(arguments.ledger_path))
+            print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        elif arguments.command == "serve-api":
+            from uvicorn import run
+
+            from .dashboard import build_summary
+            from .service_api import create_app
+
+            run(
+                create_app(
+                    store=create_configured_store(),
+                    record_loader=lambda: read_records(arguments.ledger_path),
+                    summary_loader=lambda: build_summary(arguments.ledger_path),
+                ),
+                host=arguments.host,
+                port=arguments.port,
+            )
         else:
             result = report(arguments.ledger_path)
             if arguments.as_json:

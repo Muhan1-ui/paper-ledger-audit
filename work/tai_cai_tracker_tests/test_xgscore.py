@@ -1,8 +1,29 @@
 import unittest
 import json
+from unittest.mock import MagicMock, patch
 
 
 class XGScoreTests(unittest.TestCase):
+    def test_event_request_uses_the_configured_public_source_proxy(self):
+        from outputs.tai_cai_tracker.xgscore import _http_get
+
+        response = MagicMock()
+        response.read.return_value = b"<html>event</html>"
+        opener = MagicMock()
+        opener.open.return_value.__enter__.return_value = response
+        proxy = "http://127.0.0.1:7892"
+
+        with patch.dict("os.environ", {"TAICAI_HTTP_PROXY": proxy}), \
+             patch("outputs.tai_cai_tracker.xgscore.coordinated_public_request", side_effect=lambda _url, load: load()), \
+             patch("outputs.tai_cai_tracker.xgscore.ProxyHandler") as proxy_handler, \
+             patch("outputs.tai_cai_tracker.xgscore.build_opener", return_value=opener):
+            self.assertEqual(
+                _http_get("https://xgscore.io/league/event/xgscore"),
+                ("<html>event</html>", "bd3e8f65b7c0b5625b946635091346297c1002a38cd6b310f2e4155bb1b9c9ea"),
+            )
+
+        proxy_handler.assert_called_once_with({"http": proxy, "https": proxy})
+
     def test_discover_event_urls_reads_homepage_once_for_multiple_verified_name_pairs(self):
         from unittest.mock import patch
         from outputs.tai_cai_tracker.xgscore import discover_xgscore_event_urls

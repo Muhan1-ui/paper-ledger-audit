@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
@@ -9,7 +10,7 @@ from html import unescape
 from urllib.parse import urlencode
 from urllib.request import ProxyHandler, Request, build_opener
 
-from .transport import coordinated_public_request
+from .transport import coordinated_public_request, proxy_mapping
 
 
 PROVIDER_NAME = "433足球网"
@@ -134,7 +135,7 @@ def parse_match_detail(page_html):
 def _http_get(url):
     def load():
         request = Request(url, headers={"Accept": "text/html", "User-Agent": "Mozilla/5.0"})
-        opener = build_opener(ProxyHandler({}))
+        opener = build_opener(ProxyHandler(proxy_mapping(os.environ)))
         with opener.open(request, timeout=20) as response:
             return response.read().decode("utf-8")
 
@@ -250,7 +251,7 @@ def _collect_match_list_page(page_index, search_date=None):
                 "User-Agent": "Mozilla/5.0",
             },
         )
-        opener = build_opener(ProxyHandler({}))
+        opener = build_opener(ProxyHandler(proxy_mapping(os.environ)))
         with opener.open(request, timeout=20) as response:
             return response.read().decode("utf-8")
 
