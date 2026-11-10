@@ -53,3 +53,5 @@ work/chrome-*-profile/
 
 # Stray dashboard screenshots
 work/*.png
+# football-data.co.uk history cache
+outputs/tai_cai_tracker/data/history/
