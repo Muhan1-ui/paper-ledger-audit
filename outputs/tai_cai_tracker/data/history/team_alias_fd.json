@@ -1,0 +1,539 @@
+{
+  "Ajaccio": [
+    "Ajaccio"
+  ],
+  "Ajaccio GFCO": [
+    "Ajaccio GFCO"
+  ],
+  "Alaves": [
+    "Alaves"
+  ],
+  "Almeria": [
+    "Almeria"
+  ],
+  "Amiens": [
+    "Amiens"
+  ],
+  "Angers": [
+    "Angers"
+  ],
+  "Arsenal": [
+    "Arsenal",
+    "阿森纳"
+  ],
+  "Aston Villa": [
+    "Aston Villa",
+    "维拉"
+  ],
+  "Atalanta": [
+    "Atalanta",
+    "亚特兰大"
+  ],
+  "Ath Bilbao": [
+    "Ath Bilbao"
+  ],
+  "Ath Madrid": [
+    "Ath Madrid"
+  ],
+  "Augsburg": [
+    "Augsburg"
+  ],
+  "Auxerre": [
+    "Auxerre"
+  ],
+  "Barcelona": [
+    "Barcelona",
+    "巴萨"
+  ],
+  "Bastia": [
+    "Bastia"
+  ],
+  "Bayern Munich": [
+    "Bayern Munich"
+  ],
+  "Benevento": [
+    "Benevento"
+  ],
+  "Betis": [
+    "Betis"
+  ],
+  "Bielefeld": [
+    "Bielefeld"
+  ],
+  "Bochum": [
+    "Bochum"
+  ],
+  "Bologna": [
+    "Bologna",
+    "博洛尼亚"
+  ],
+  "Bordeaux": [
+    "Bordeaux"
+  ],
+  "Bournemouth": [
+    "Bournemouth"
+  ],
+  "Braunschweig": [
+    "Braunschweig"
+  ],
+  "Brentford": [
+    "Brentford"
+  ],
+  "Brescia": [
+    "Brescia"
+  ],
+  "Brest": [
+    "Brest"
+  ],
+  "Brighton": [
+    "Brighton"
+  ],
+  "Burnley": [
+    "Burnley"
+  ],
+  "Cadiz": [
+    "Cadiz"
+  ],
+  "Caen": [
+    "Caen"
+  ],
+  "Cagliari": [
+    "Cagliari"
+  ],
+  "Cardiff": [
+    "Cardiff"
+  ],
+  "Carpi": [
+    "Carpi"
+  ],
+  "Catania": [
+    "Catania"
+  ],
+  "Celta": [
+    "Celta"
+  ],
+  "Cesena": [
+    "Cesena"
+  ],
+  "Chelsea": [
+    "Chelsea"
+  ],
+  "Chievo": [
+    "Chievo"
+  ],
+  "Clermont": [
+    "Clermont"
+  ],
+  "Como": [
+    "Como"
+  ],
+  "Cordoba": [
+    "Cordoba"
+  ],
+  "Cremonese": [
+    "Cremonese"
+  ],
+  "Crotone": [
+    "Crotone"
+  ],
+  "Crystal Palace": [
+    "Crystal Palace"
+  ],
+  "Darmstadt": [
+    "Darmstadt"
+  ],
+  "Dijon": [
+    "Dijon"
+  ],
+  "Dortmund": [
+    "Dortmund"
+  ],
+  "Eibar": [
+    "Eibar"
+  ],
+  "Ein Frankfurt": [
+    "Ein Frankfurt"
+  ],
+  "Elche": [
+    "Elche"
+  ],
+  "Empoli": [
+    "Empoli"
+  ],
+  "Espanol": [
+    "Espanol"
+  ],
+  "Everton": [
+    "Everton"
+  ],
+  "Evian Thonon Gaillard": [
+    "Evian Thonon Gaillard"
+  ],
+  "FC Koln": [
+    "FC Koln"
+  ],
+  "Fiorentina": [
+    "Fiorentina"
+  ],
+  "Fortuna Dusseldorf": [
+    "Fortuna Dusseldorf"
+  ],
+  "Freiburg": [
+    "Freiburg"
+  ],
+  "Frosinone": [
+    "Frosinone"
+  ],
+  "Fulham": [
+    "Fulham"
+  ],
+  "Genoa": [
+    "Genoa"
+  ],
+  "Getafe": [
+    "Getafe",
+    "赫塔费"
+  ],
+  "Girona": [
+    "Girona"
+  ],
+  "Granada": [
+    "Granada"
+  ],
+  "Greuther Furth": [
+    "Greuther Furth"
+  ],
+  "Guingamp": [
+    "Guingamp"
+  ],
+  "Hamburg": [
+    "Hamburg"
+  ],
+  "Hannover": [
+    "Hannover"
+  ],
+  "Heidenheim": [
+    "Heidenheim"
+  ],
+  "Hertha": [
+    "Hertha"
+  ],
+  "Hoffenheim": [
+    "Hoffenheim"
+  ],
+  "Holstein Kiel": [
+    "Holstein Kiel"
+  ],
+  "Huddersfield": [
+    "Huddersfield"
+  ],
+  "Huesca": [
+    "Huesca"
+  ],
+  "Hull": [
+    "Hull"
+  ],
+  "Ingolstadt": [
+    "Ingolstadt"
+  ],
+  "Inter": [
+    "Inter"
+  ],
+  "Ipswich": [
+    "Ipswich"
+  ],
+  "Juventus": [
+    "Juventus"
+  ],
+  "La Coruna": [
+    "La Coruna"
+  ],
+  "Las Palmas": [
+    "Las Palmas"
+  ],
+  "Lazio": [
+    "Lazio"
+  ],
+  "Le Havre": [
+    "Le Havre"
+  ],
+  "Lecce": [
+    "Lecce",
+    "莱切"
+  ],
+  "Leeds": [
+    "Leeds"
+  ],
+  "Leganes": [
+    "Leganes"
+  ],
+  "Leicester": [
+    "Leicester"
+  ],
+  "Lens": [
+    "Lens"
+  ],
+  "Levante": [
+    "Levante"
+  ],
+  "Leverkusen": [
+    "Leverkusen"
+  ],
+  "Lille": [
+    "Lille"
+  ],
+  "Liverpool": [
+    "Liverpool"
+  ],
+  "Livorno": [
+    "Livorno"
+  ],
+  "Lorient": [
+    "Lorient"
+  ],
+  "Luton": [
+    "Luton"
+  ],
+  "Lyon": [
+    "Lyon"
+  ],
+  "M'gladbach": [
+    "M'gladbach"
+  ],
+  "Mainz": [
+    "Mainz"
+  ],
+  "Malaga": [
+    "Malaga"
+  ],
+  "Mallorca": [
+    "Mallorca"
+  ],
+  "Man City": [
+    "Man City"
+  ],
+  "Man United": [
+    "Man United"
+  ],
+  "Marseille": [
+    "Marseille"
+  ],
+  "Metz": [
+    "Metz"
+  ],
+  "Middlesbrough": [
+    "Middlesbrough"
+  ],
+  "Milan": [
+    "Milan"
+  ],
+  "Monaco": [
+    "Monaco"
+  ],
+  "Montpellier": [
+    "Montpellier"
+  ],
+  "Monza": [
+    "Monza"
+  ],
+  "Nancy": [
+    "Nancy"
+  ],
+  "Nantes": [
+    "Nantes"
+  ],
+  "Napoli": [
+    "Napoli"
+  ],
+  "Newcastle": [
+    "Newcastle"
+  ],
+  "Nice": [
+    "Nice"
+  ],
+  "Nimes": [
+    "Nimes"
+  ],
+  "Norwich": [
+    "Norwich"
+  ],
+  "Nott'm Forest": [
+    "Nott'm Forest"
+  ],
+  "Nurnberg": [
+    "Nurnberg"
+  ],
+  "Osasuna": [
+    "Osasuna",
+    "奥萨苏纳"
+  ],
+  "Oviedo": [
+    "Oviedo"
+  ],
+  "Paderborn": [
+    "Paderborn"
+  ],
+  "Palermo": [
+    "Palermo"
+  ],
+  "Paris FC": [
+    "Paris FC"
+  ],
+  "Paris SG": [
+    "Paris SG"
+  ],
+  "Parma": [
+    "Parma"
+  ],
+  "Pescara": [
+    "Pescara"
+  ],
+  "Pisa": [
+    "Pisa"
+  ],
+  "QPR": [
+    "QPR"
+  ],
+  "RB Leipzig": [
+    "RB Leipzig"
+  ],
+  "Reading": [
+    "Reading"
+  ],
+  "Real Madrid": [
+    "Real Madrid"
+  ],
+  "Reims": [
+    "Reims"
+  ],
+  "Rennes": [
+    "Rennes"
+  ],
+  "Roma": [
+    "Roma",
+    "罗马"
+  ],
+  "Salernitana": [
+    "Salernitana"
+  ],
+  "Sampdoria": [
+    "Sampdoria"
+  ],
+  "Sassuolo": [
+    "Sassuolo"
+  ],
+  "Schalke 04": [
+    "Schalke 04"
+  ],
+  "Sevilla": [
+    "Sevilla"
+  ],
+  "Sheffield United": [
+    "Sheffield United"
+  ],
+  "Siena": [
+    "Siena"
+  ],
+  "Sochaux": [
+    "Sochaux"
+  ],
+  "Sociedad": [
+    "Sociedad"
+  ],
+  "Southampton": [
+    "Southampton"
+  ],
+  "Sp Gijon": [
+    "Sp Gijon"
+  ],
+  "Spal": [
+    "Spal"
+  ],
+  "Spezia": [
+    "Spezia"
+  ],
+  "St Etienne": [
+    "St Etienne"
+  ],
+  "St Pauli": [
+    "St Pauli"
+  ],
+  "Stoke": [
+    "Stoke"
+  ],
+  "Strasbourg": [
+    "Strasbourg"
+  ],
+  "Stuttgart": [
+    "Stuttgart"
+  ],
+  "Sunderland": [
+    "Sunderland"
+  ],
+  "Swansea": [
+    "Swansea"
+  ],
+  "Torino": [
+    "Torino"
+  ],
+  "Tottenham": [
+    "Tottenham"
+  ],
+  "Toulouse": [
+    "Toulouse"
+  ],
+  "Troyes": [
+    "Troyes"
+  ],
+  "Udinese": [
+    "Udinese"
+  ],
+  "Union Berlin": [
+    "Union Berlin"
+  ],
+  "Valencia": [
+    "Valencia"
+  ],
+  "Valenciennes": [
+    "Valenciennes"
+  ],
+  "Valladolid": [
+    "Valladolid"
+  ],
+  "Vallecano": [
+    "Vallecano"
+  ],
+  "Venezia": [
+    "Venezia"
+  ],
+  "Verona": [
+    "Verona"
+  ],
+  "Villarreal": [
+    "Villarreal"
+  ],
+  "Watford": [
+    "Watford"
+  ],
+  "Werder Bremen": [
+    "Werder Bremen"
+  ],
+  "West Brom": [
+    "West Brom"
+  ],
+  "West Ham": [
+    "West Ham"
+  ],
+  "Wigan": [
+    "Wigan"
+  ],
+  "Wolfsburg": [
+    "Wolfsburg"
+  ],
+  "Wolves": [
+    "Wolves"
+  ],
+  "Zaragoza": [
+    "Zaragoza"
+  ]
+}
