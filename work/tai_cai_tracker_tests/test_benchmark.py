@@ -104,6 +104,137 @@ class NormalizationTests(unittest.TestCase):
         )
 
 
+class ExactTeamMatchKeyTests(unittest.TestCase):
+    def test_club_suffix_and_accent_are_removed(self):
+        self.assertEqual(benchmark.team_match_key("FC Barcelona"), "barcelona")
+        self.assertEqual(benchmark.team_match_key("AFC Bournemouth"), "bournemouth")
+        self.assertEqual(benchmark.team_match_key("Málaga CF"), "malaga")
+        self.assertEqual(benchmark.team_match_key("AC Milan"), "milan")
+
+    def test_only_exact_equality_matches(self):
+        self.assertEqual(
+            benchmark.team_match_key("Tottenham Hotspur"), "tottenham hotspur"
+        )
+        self.assertNotEqual(
+            benchmark.team_match_key("Tottenham Hotspur"),
+            benchmark.team_match_key("Tottenham"),
+        )
+        self.assertNotEqual(
+            benchmark.team_match_key("Manchester City"),
+            benchmark.team_match_key("Man City"),
+        )
+
+
+def resolved_entry(chinese, english, aliases=(), qid="Q1"):
+    return {
+        "status": "resolved",
+        "official_team": chinese,
+        "qid": qid,
+        "chinese_name": chinese,
+        "english_name": english,
+        "english_names": [english, *aliases],
+        "search_url": "https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json",
+        "source_url": f"https://www.wikidata.org/w/api.php?action=wbgetentities&ids={qid}&format=json",
+        "captured_at": "2026-11-10T12:00:00+00:00",
+    }
+
+
+class WikidataAliasTests(unittest.TestCase):
+    def test_alias_sources_use_exact_normalized_names_only(self):
+        teams = {
+            "巴萨": resolved_entry("巴萨", "FC Barcelona"),
+            "热刺": resolved_entry("热刺", "Tottenham Hotspur FC", aliases=["Spurs"]),
+            "曼城": resolved_entry("曼城", "Manchester City FC"),
+            "未知": {"status": "unresolved", "reason": "wikidata_exact_name_not_found"},
+            "故障队": {
+                "status": "failed",
+                "reason": "HTTPError",
+                "http_status": 403,
+            },
+        }
+        sources, detail = benchmark.build_wikidata_alias_sources(
+            teams, ["Barcelona", "Tottenham", "Man City"]
+        )
+        self.assertEqual(sources["巴萨"]["source_name"], "Barcelona")
+        # "Tottenham Hotspur" does not equal football-data's "Tottenham".
+        self.assertNotIn("热刺", sources)
+        # "Manchester City" does not equal football-data's "Man City".
+        self.assertNotIn("曼城", sources)
+        self.assertEqual(len(detail["resolved"]), 1)
+        self.assertEqual(len(detail["unmatched"]), 2)
+        self.assertEqual(
+            [item["official_team"] for item in detail["failed"]], ["故障队", "未知"]
+        )
+        self.assertEqual(detail["failed"][0]["http_status"], 403)
+
+    def test_alias_source_becomes_chinese_alias_for_football_data_name(self):
+        sources, _ = benchmark.build_wikidata_alias_sources(
+            {"巴萨": resolved_entry("巴萨", "FC Barcelona")}, ["Barcelona", "Roma"]
+        )
+        document = benchmark.build_team_alias(
+            ["Barcelona", "Roma"], sources
+        )
+        self.assertIn("巴萨", document["Barcelona"])
+        self.assertEqual(document["Roma"], ["Roma"])
+
+    def test_verified_registry_identity_seeds_cache_without_request(self):
+        entry = resolved_entry("巴萨", "FC Barcelona")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            registry_path = root / "source_link_registry.json"
+            registry_path.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "matches": {},
+                        "fotmob_teams": {},
+                        "wikidata_teams": {"巴萨": entry},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            cache_path = root / "wikidata_team_cache.json"
+            teams = benchmark.seed_wikidata_cache_from_registry(
+                ["巴萨"], cache_path, registry_path
+            )
+            self.assertEqual(teams["巴萨"]["status"], "resolved")
+            self.assertEqual(teams["巴萨"]["cache_source"], "source_link_registry")
+            sources, _ = benchmark.build_wikidata_alias_sources(
+                teams, ["Barcelona"]
+            )
+            self.assertEqual(sources["巴萨"]["source_name"], "Barcelona")
+            self.assertTrue(cache_path.exists())
+
+    def test_resolve_wikidata_teams_caches_success_and_failure(self):
+        calls = []
+
+        def fake_resolve(name):
+            calls.append(name)
+            if name == "故障队":
+                raise PermissionError("blocked")
+            return resolved_entry(name, "FC Barcelona")
+
+        with tempfile.TemporaryDirectory() as directory:
+            cache_path = Path(directory) / "wikidata_team_cache.json"
+            teams, failures = benchmark.resolve_wikidata_teams(
+                ["巴萨", "故障队", "巴萨"], cache_path, resolve_identity=fake_resolve
+            )
+            self.assertEqual(calls, ["巴萨", "故障队"])
+            self.assertEqual(len(failures), 1)
+            self.assertEqual(failures[0]["official_team"], "故障队")
+            self.assertEqual(teams["巴萨"]["status"], "resolved")
+            self.assertEqual(teams["故障队"]["status"], "failed")
+            cached = benchmark.load_wikidata_cache(cache_path)
+            self.assertEqual(cached["巴萨"]["qid"], "Q1")
+            # Resolved names are never requested again.
+            _, failures = benchmark.resolve_wikidata_teams(
+                ["巴萨"], cache_path, resolve_identity=fake_resolve
+            )
+            self.assertEqual(calls, ["巴萨", "故障队"])
+            self.assertFalse(failures)
+
+
 class TeamAliasTests(unittest.TestCase):
     def test_build_team_alias_uses_real_names_only(self):
         document = benchmark.build_team_alias(
@@ -218,7 +349,8 @@ class ScoringTests(unittest.TestCase):
                 "actual": "away_win",
                 "your_blended": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
                 "prematch_market": {"home_win": 0.4, "draw": 0.3, "away_win": 0.3},
-                "pinnacle_fair": {"home_win": 0.2, "draw": 0.3, "away_win": 0.5},
+                "market_close_fair": {"home_win": 0.2, "draw": 0.3, "away_win": 0.5},
+                "market_close_source": "pinnacle",
             }
         ]
         metrics = benchmark.evaluate_rows(rows)
@@ -227,9 +359,10 @@ class ScoringTests(unittest.TestCase):
         self.assertEqual(metrics["your_blended"]["top1"], 0.0)
         self.assertAlmostEqual(metrics["prematch_market"]["rps"], 0.325)
         self.assertAlmostEqual(metrics["prematch_market"]["brier"], 0.74)
-        self.assertAlmostEqual(metrics["pinnacle_fair"]["rps"], 0.145)
-        self.assertAlmostEqual(metrics["pinnacle_fair"]["brier"], 0.38)
-        self.assertEqual(metrics["pinnacle_fair"]["top1"], 1.0)
+        self.assertAlmostEqual(metrics["market_close_fair"]["rps"], 0.145)
+        self.assertAlmostEqual(metrics["market_close_fair"]["brier"], 0.38)
+        self.assertEqual(metrics["market_close_fair"]["top1"], 1.0)
+        self.assertEqual(metrics["market_close_sources"], {"pinnacle": 1})
 
     def test_divergence_count_and_prediction_hit(self):
         rows = [
@@ -237,15 +370,19 @@ class ScoringTests(unittest.TestCase):
                 "matched": True,
                 "actual": "away_win",
                 "your_blended": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
-                "pinnacle_fair": {"home_win": 0.2, "draw": 0.3, "away_win": 0.5},
+                "market_close_fair": {"home_win": 0.2, "draw": 0.3, "away_win": 0.5},
+                "market_close_source": "pinnacle",
             },
             {
                 "matched": True,
                 "actual": "home_win",
                 "your_blended": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
-                "pinnacle_fair": {"home_win": 0.4, "draw": 0.3, "away_win": 0.3},
+                "market_close_fair": {"home_win": 0.4, "draw": 0.3, "away_win": 0.3},
+                "market_close_source": "avg",
             },
         ]
+        # 新语义：divergence 只在 market_close_fair 非空且其 top1 与
+        # your_blended 的 top1 不同时计数；第二行两者同为 home_win，故不计入。
         divergence = benchmark.evaluate_rows(rows)["divergence"]
         self.assertEqual(divergence["n"], 1)
         self.assertEqual(divergence["paired"], 2)
@@ -266,10 +403,11 @@ class MissingEvidenceTests(unittest.TestCase):
             alias_document("Chelsea", "Fulham"),
         )
         self.assertTrue(rows[0]["matched"])
-        self.assertIsNone(rows[0]["pinnacle_fair"])
+        self.assertIsNone(rows[0]["market_close_fair"])
+        self.assertIsNone(rows[0]["market_close_source"])
         metrics = benchmark.evaluate_rows(rows)
-        self.assertEqual(metrics["pinnacle_fair"]["n"], 0)
-        self.assertIsNone(metrics["pinnacle_fair"]["rps"])
+        self.assertEqual(metrics["market_close_fair"]["n"], 0)
+        self.assertIsNone(metrics["market_close_fair"]["rps"])
         self.assertEqual(metrics["your_blended"]["n"], 1)
 
 
@@ -318,8 +456,20 @@ class FilteringTests(unittest.TestCase):
             [],
             alias_document("Chelsea", "Fulham"),
         )
+        # 英冠 now maps to the collected E1 division, so it is no longer
+        # reported as competition_unmapped.
         self.assertEqual(rows[0]["reason"], "no_date_candidate")
-        self.assertEqual(rows[1]["reason"], "competition_unmapped")
+        self.assertEqual(rows[1]["reason"], "no_date_candidate")
+
+    def test_uncollected_competition_is_reported_as_unmapped(self):
+        prediction = make_prediction(
+            "p1", "周一001", "2026-09-02T02:45:00+08:00", "欧冠", "Chelsea", "Fulham"
+        )
+        eligible, skipped = benchmark.eligible_predictions(
+            [prediction, make_settlement("p1")]
+        )
+        self.assertEqual(skipped, 1)
+        self.assertEqual(eligible, [])
 
     def test_team_unmapped_reason_is_recorded(self):
         prediction = make_prediction(
@@ -343,7 +493,7 @@ class LinkTests(unittest.TestCase):
             root = Path(directory)
             ledger_path = root / "paper_ledger.jsonl"
             history_path = root / "history_matches.jsonl"
-            aliases_path = root / "source_aliases.json"
+            chinese_map_path = root / "chinese_team_map.json"
             team_alias_path = root / "team_alias_fd.json"
             output_path = root / "ledger_benchmark.jsonl"
 
@@ -377,13 +527,11 @@ class LinkTests(unittest.TestCase):
                 + "\n",
                 encoding="utf-8",
             )
-            aliases_path.write_text(
+            chinese_map_path.write_text(
                 json.dumps(
                     {
-                        "aliases": {
-                            "亚特兰大": {"source_name": "Atalanta"},
-                            "罗马": {"source_name": "Roma"},
-                        }
+                        "亚特兰大": "Atalanta",
+                        "罗马": "Roma",
                     },
                     ensure_ascii=False,
                 ),
@@ -393,9 +541,11 @@ class LinkTests(unittest.TestCase):
             rows, summary = benchmark.run_link(
                 ledger_path=ledger_path,
                 history_path=history_path,
-                source_aliases_path=aliases_path,
+                chinese_team_map_path=chinese_map_path,
                 team_alias_path=team_alias_path,
                 output_path=output_path,
+                wikidata_cache_path=root / "wikidata_team_cache.json",
+                source_link_registry_path=root / "source_link_registry.json",
             )
 
             self.assertEqual(summary["eligible"], 1)
@@ -412,7 +562,8 @@ class LinkTests(unittest.TestCase):
             ]
             self.assertEqual(len(written), 1)
             self.assertTrue(written[0]["matched"])
-            self.assertEqual(written[0]["pinnacle_fair"]["away_win"], 0.5)
+            self.assertEqual(written[0]["market_close_fair"]["away_win"], 0.5)
+            self.assertEqual(written[0]["market_close_source"], "pinnacle")
             self.assertEqual(written[0]["your_blended"]["home_win"], 0.5)
             self.assertEqual(written[0]["prematch_market"]["home_win"], 0.4)
 
@@ -422,8 +573,9 @@ class LinkTests(unittest.TestCase):
 
             metrics = benchmark.evaluate_rows(written)
             self.assertEqual(metrics["your_blended"]["n"], 1)
-            self.assertEqual(metrics["pinnacle_fair"]["n"], 1)
-            self.assertEqual(metrics["pinnacle_fair"]["top1"], 1.0)
+            self.assertEqual(metrics["market_close_fair"]["n"], 1)
+            self.assertEqual(metrics["market_close_fair"]["top1"], 1.0)
+            self.assertEqual(metrics["market_close_sources"], {"pinnacle": 1})
             self.assertEqual(metrics["divergence"]["n"], 1)
 
 
