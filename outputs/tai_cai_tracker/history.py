@@ -31,9 +31,14 @@ MIRROR_TEMPLATE = (
 )
 USER_AGENT = "Mozilla/5.0"
 
-DIVISIONS: Tuple[str, ...] = ("E0", "D1", "SP1", "I1", "F1")
+DIVISIONS: Tuple[str, ...] = ("E0", "D1", "SP1", "I1", "F1", "E1")
 DEFAULT_FIRST_SEASON = 2012
-DEFAULT_LAST_SEASON = 2026  # exclusive end year: the 2025/26 season
+DEFAULT_LAST_SEASON = 2027  # exclusive end year: the 2026/27 season
+
+# football-data.co.uk answers some season files (notably 2026/27) with a 302
+# from www to the apex host.  Follow it exactly like a browser instead of
+# treating the redirect as a download failure.
+_REDIRECT_OPENER = urllib.request.build_opener(urllib.request.HTTPRedirectHandler())
 
 OUTCOMES: Tuple[str, ...] = ("home_win", "draw", "away_win")
 FTR_TO_RESULT = {"H": "home_win", "D": "draw", "A": "away_win"}
@@ -288,7 +293,7 @@ def brier_multiclass(prob_dict: Mapping[str, float], actual: str) -> float:
 def _http_get(url: str, timeout: float = 60.0) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with _REDIRECT_OPENER.open(request, timeout=timeout) as response:
             status = getattr(response, "status", None) or response.getcode()
             body = response.read()
     except urllib.error.HTTPError as exc:
@@ -512,7 +517,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--divisions",
         default=",".join(DIVISIONS),
-        help="comma-separated divisions (default: E0,D1,SP1,I1,F1)",
+        help="comma-separated divisions (default: E0,D1,SP1,I1,F1,E1)",
     )
     parser.add_argument(
         "--first-season",
@@ -524,7 +529,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--last-season",
         type=int,
         default=DEFAULT_LAST_SEASON,
-        help="exclusive end year (default: 2026, meaning through 2025/26)",
+        help="exclusive end year (default: 2027, meaning through 2026/27)",
     )
     return parser
 

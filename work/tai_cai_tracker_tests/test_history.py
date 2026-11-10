@@ -95,7 +95,42 @@ class ParsingTests(unittest.TestCase):
     def test_season_code_and_label(self):
         self.assertEqual(history.season_code(2012), "1213")
         self.assertEqual(history.season_code(2025), "2526")
+        self.assertEqual(history.season_code(2026), "2627")
         self.assertEqual(history.season_label(2025), "2025/26")
+        self.assertEqual(history.season_label(2026), "2026/27")
+
+    def test_default_season_range_includes_2627_and_e1(self):
+        self.assertIn("E1", history.DIVISIONS)
+        seasons = range(history.DEFAULT_FIRST_SEASON, history.DEFAULT_LAST_SEASON)
+        self.assertEqual(history.season_code(seasons[-1]), "2627")
+
+    def test_redirect_opener_follows_redirects(self):
+        import urllib.request
+
+        self.assertTrue(
+            any(
+                isinstance(handler, urllib.request.HTTPRedirectHandler)
+                for handler in history._REDIRECT_OPENER.handlers
+            )
+        )
+
+    def test_e1_championship_csv_parses(self):
+        csv_text = (
+            "Div,Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR,PSCH,PSCD,PSCA\n"
+            "E1,08/08/2026,Leicester,Sheffield Wed,1,2,A,2.10,3.40,3.60\n"
+        )
+        matches, skipped = history.parse_csv_text(csv_text, "E1", 2026)
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(sum(skipped.values()), 0)
+        self.assertEqual(matches[0]["division"], "E1")
+        self.assertEqual(matches[0]["season"], "2026/27")
+        self.assertEqual(matches[0]["match_id"], "e1|2026-08-08|leicester|sheffield wed")
+        self.assertEqual(matches[0]["result"], "away_win")
+        self.assertAlmostEqual(
+            matches[0]["odds"]["pinnacle"]["fair"]["away"],
+            (1 / 3.60) / (1 / 2.10 + 1 / 3.40 + 1 / 3.60),
+            places=12,
+        )
 
     def test_inline_csv_parses_both_date_formats(self):
         matches, skipped = history.parse_csv_text(FULL_HEADER + "\n" + FULL_ROWS, "E0", 2012)
