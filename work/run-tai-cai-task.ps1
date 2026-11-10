@@ -65,7 +65,7 @@ function Invoke-TrackerStage {
                 } else {
                     $RecoveryScan = $true
                 }
-                $Output = & $Python -m outputs.tai_cai_tracker.cli schedule-driven-freeze $Ledger --min-lead-minutes $MinimumLeadMinutes --max-lead-minutes 60 --max-workers 2 --sales-cutoff-policy $SalesCutoffPolicy 2>&1
+                $Output = & $Python -m outputs.tai_cai_tracker.cli schedule-driven-freeze $Ledger --min-lead-minutes $MinimumLeadMinutes --max-lead-minutes 60 --max-workers 2 --sales-cutoff-policy $SalesCutoffPolicy --freeze-window-minutes 30 2>&1
                 if ($LASTEXITCODE -ne 0) {
                     throw "prematch command failed with exit code $LASTEXITCODE"
                 }

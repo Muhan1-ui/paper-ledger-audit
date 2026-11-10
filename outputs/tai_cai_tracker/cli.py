@@ -1663,9 +1663,12 @@ def _eligible_schedule_matches(
     sales_cutoff_policy,
     preflight=False,
     include_open_matches=False,
+    freeze_window_minutes=0,
 ):
     if not isinstance(now, datetime) or now.tzinfo is None:
         raise ValueError("now must be a timezone-aware datetime")
+    if isinstance(freeze_window_minutes, bool) or not isinstance(freeze_window_minutes, int):
+        raise ValueError("freeze_window_minutes must be an integer")
 
     eligible = []
     skipped = {}
@@ -1733,6 +1736,18 @@ def _eligible_schedule_matches(
                     **timing_metadata,
                 })
             continue
+        # A positive freeze window is an additional close-to-kickoff gate: only
+        # 0 < (kickoff - now) <= freeze_window_minutes may freeze. Zero or a
+        # negative value means "no close gate" and keeps the pre-existing
+        # lead/sales-cutoff selection unchanged; zero is not an empty window.
+        # Operator --include-open-matches keeps its explicit override.
+        if freeze_window_minutes > 0 and not include_open_matches:
+            minutes_until_kickoff = (kickoff - now).total_seconds() / 60
+            if not 0 < minutes_until_kickoff <= freeze_window_minutes:
+                skipped["outside_close_freeze_window"] = (
+                    skipped.get("outside_close_freeze_window", 0) + 1
+                )
+                continue
         if not within_window:
             skipped["outside_freeze_window"] = skipped.get("outside_freeze_window", 0) + 1
             continue
@@ -3675,6 +3690,7 @@ def schedule_driven_freeze(
     source_link_registry_path=DEFAULT_SOURCE_LINK_REGISTRY_PATH,
     sales_cutoff_policy_path=DEFAULT_SALES_CUTOFF_POLICY_PATH,
     include_open_matches=False,
+    freeze_window_minutes=0,
 ):
     with _ledger_operation_lock(ledger_path):
         return _schedule_driven_freeze(
@@ -3687,6 +3703,7 @@ def schedule_driven_freeze(
             source_link_registry_path=source_link_registry_path,
             sales_cutoff_policy_path=sales_cutoff_policy_path,
             include_open_matches=include_open_matches,
+            freeze_window_minutes=freeze_window_minutes,
         )
 
 
@@ -3700,6 +3717,7 @@ def _schedule_driven_freeze(
     source_link_registry_path=DEFAULT_SOURCE_LINK_REGISTRY_PATH,
     sales_cutoff_policy_path=DEFAULT_SALES_CUTOFF_POLICY_PATH,
     include_open_matches=False,
+    freeze_window_minutes=0,
 ):
     """Freeze only review-ready paper records near kickoff from one schedule read."""
     if not isinstance(max_workers, int) or max_workers < 1 or max_workers > 4:
@@ -3717,6 +3735,7 @@ def _schedule_driven_freeze(
         max_lead_minutes,
         sales_cutoff_policy,
         include_open_matches=include_open_matches,
+        freeze_window_minutes=freeze_window_minutes,
     )
     batch_433, source_link_summary = _resolve_433_source_links(
         eligible,
@@ -3805,6 +3824,7 @@ def _schedule_driven_freeze(
         "skipped_by_reason": skipped,
         "skipped_items": skipped_items,
         "sales_cutoff_policy": sales_cutoff_policy,
+        "freeze_window_minutes": freeze_window_minutes,
         "selection_mode": "open_matches" if include_open_matches else "scheduled_window",
         "frozen_count": sum(item["status"] == "frozen" for item in items),
         "observation_count": sum(item["status"] == "observation_only" for item in items),
@@ -4620,6 +4640,16 @@ def _build_parser():
     schedule_driven_freeze_parser.add_argument("--max-lead-minutes", type=int, default=60)
     schedule_driven_freeze_parser.add_argument("--max-workers", type=int, default=2)
     schedule_driven_freeze_parser.add_argument(
+        "--freeze-window-minutes",
+        type=int,
+        default=0,
+        help=(
+            "prematch only: freeze only when 0 < kickoff - now <= this many minutes "
+            "(default: %(default)s); 0 or a negative value restores the previous "
+            "lead-window behavior"
+        ),
+    )
+    schedule_driven_freeze_parser.add_argument(
         "--include-open-matches",
         action="store_true",
         help="operator-run only: include official open matches before kickoff outside the scheduled window",
@@ -5085,6 +5115,7 @@ def main(argv=None):
                     max_workers=arguments.max_workers,
                     sales_cutoff_policy_path=arguments.sales_cutoff_policy,
                     include_open_matches=arguments.include_open_matches,
+                    freeze_window_minutes=arguments.freeze_window_minutes,
                 ),
                 default=_json_default,
                 ensure_ascii=False,

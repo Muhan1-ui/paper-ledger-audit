@@ -481,6 +481,7 @@ class CliWorkflowTests(unittest.TestCase):
                     max_lead_minutes=240,
                     now=now,
                     source_link_registry_path=registry_path,
+                    freeze_window_minutes=0,
                 )
 
         collect_schedule.assert_called_once_with(method="concern")
@@ -496,6 +497,51 @@ class CliWorkflowTests(unittest.TestCase):
         self.assertEqual(summary["eligible_count"], 1)
         self.assertEqual(summary["frozen_count"], 0)
         self.assertEqual(summary["blocked_count"], 1)
+
+    def test_schedule_driven_freeze_applies_a_positive_close_window_only_near_kickoff(self):
+        now = tracker_cli.datetime.fromisoformat("2099-01-01T12:00:00+08:00")
+        far_match = {
+            "match_id": 20990101005,
+            "match_num": "周一005",
+            "competition": "Test League",
+            "home_team": "Home FC",
+            "away_team": "Away FC",
+            "kickoff_at": "2099-01-01T12:45:00+08:00",
+            "status": "2",
+        }
+        near_match = {
+            "match_id": 20990101006,
+            "match_num": "周一006",
+            "competition": "Test League",
+            "home_team": "Home FC",
+            "away_team": "Away FC",
+            "kickoff_at": "2099-01-01T12:15:00+08:00",
+            "status": "2",
+            "official_source_url": "https://official.example.test/matches/20990101006",
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            ledger_path = Path(temporary_directory) / "ledger.jsonl"
+            ledger_path.write_text("", encoding="utf-8")
+            with patch("outputs.tai_cai_tracker.cli.collect_schedule", return_value={"matches": [far_match, near_match]}), \
+                 patch(
+                     "outputs.tai_cai_tracker.cli.collect_auto_pregame_bundle",
+                     return_value=_review_ready_bundle(near_match),
+                 ) as collect_bundle:
+                summary = tracker_cli.schedule_driven_freeze(
+                    ledger_path,
+                    min_lead_minutes=0,
+                    max_lead_minutes=240,
+                    now=now,
+                    freeze_window_minutes=30,
+                )
+            records = read_records(ledger_path)
+
+        collect_bundle.assert_called_once()
+        self.assertEqual(summary["skipped_by_reason"]["outside_close_freeze_window"], 1)
+        self.assertEqual(summary["frozen_count"], 1)
+        self.assertEqual(records[1]["record_type"], "prediction")
+        self.assertEqual(records[1]["match_id"], "周一006")
+        self.assertNotIn(20990101005, [record.get("match_id") for record in records])
 
     def test_schedule_driven_freeze_refuses_a_concurrent_ledger_update(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -895,6 +941,7 @@ class CliWorkflowTests(unittest.TestCase):
                     min_lead_minutes=90,
                     max_lead_minutes=240,
                     now=now,
+                    freeze_window_minutes=0,
                 )
 
         self.assertEqual(collect_bundle.call_args.kwargs["xgscore_url"], xgscore_candidate[str(match["match_id"])]["source_url"])
@@ -997,6 +1044,7 @@ class CliWorkflowTests(unittest.TestCase):
                     min_lead_minutes=90,
                     max_lead_minutes=240,
                     now=now,
+                    freeze_window_minutes=0,
                 )
             records = read_records(ledger_path)
 
@@ -1040,6 +1088,7 @@ class CliWorkflowTests(unittest.TestCase):
                     min_lead_minutes=90,
                     max_lead_minutes=240,
                     now=now,
+                    freeze_window_minutes=0,
                 )
             records = read_records(ledger_path)
 
@@ -1083,6 +1132,7 @@ class CliWorkflowTests(unittest.TestCase):
                     min_lead_minutes=90,
                     max_lead_minutes=240,
                     now=now,
+                    freeze_window_minutes=0,
                 )
             contents = ledger_path.read_text(encoding="utf-8")
 
@@ -1147,6 +1197,7 @@ class CliWorkflowTests(unittest.TestCase):
                     min_lead_minutes=90,
                     max_lead_minutes=240,
                     now=now,
+                    freeze_window_minutes=0,
                 )
             records = read_records(ledger_path)
 
@@ -1184,6 +1235,7 @@ class CliWorkflowTests(unittest.TestCase):
                     min_lead_minutes=90,
                     max_lead_minutes=240,
                     now=now,
+                    freeze_window_minutes=0,
                 )
             records = read_records(ledger_path)
 
@@ -1220,6 +1272,7 @@ class CliWorkflowTests(unittest.TestCase):
             max_workers=3,
             sales_cutoff_policy_path="work/custom-sales-policy.json",
             include_open_matches=False,
+            freeze_window_minutes=0,
         )
         self.assertEqual(json.loads(output.getvalue()), {"frozen_count": 0})
 
