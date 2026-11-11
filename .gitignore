@@ -29,6 +29,7 @@ work/logs/*test*.log
 work/logs/*test*.txt
 work/logs/*.stdout.txt
 work/logs/*.stderr.txt
+work/eval-reports/run.log
 
 # Local environment configuration
 .env
