@@ -274,16 +274,20 @@ class MatchListCache:
 
 
 def _league_filtered(match, competition):
+    """Return 2 for an exact league-name match, 1 for a prefix match, 0 otherwise."""
     if competition not in LEAGUE:
-        return None
+        return 0
     league_token, ccode = LEAGUE[competition]
-    if not _normalise_league(match.get("league")).startswith(league_token):
-        return False
     if ccode is not None:
         observed = match.get("ccode")
         if not isinstance(observed, str) or observed.casefold() != ccode.casefold():
-            return False
-    return True
+            return 0
+    name = _normalise_league(match.get("league"))
+    if name == league_token:
+        return 2
+    if name.startswith(league_token):
+        return 1
+    return 0
 
 
 def _score_matches(match, ledger_score):
@@ -402,10 +406,11 @@ def main():
             unmatched_rows.append(_record_unmatched(match, "fetch_error", [], cache))
             continue
 
-        league_candidates = [
-            item for item in time_candidates
-            if _league_filtered(item, match["competition"])
+        scored_candidates = [
+            (item, _league_filtered(item, match["competition"])) for item in time_candidates
         ]
+        exact_candidates = [item for item, level in scored_candidates if level == 2]
+        league_candidates = exact_candidates or [item for item, level in scored_candidates if level == 1]
         if not league_candidates:
             reason = "no_time_candidate" if not time_candidates else "no_league_candidate"
             stats["unmatched"] += 1
