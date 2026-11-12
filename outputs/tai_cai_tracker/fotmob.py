@@ -284,7 +284,7 @@ def _team_payload(next_data):
 
 def _team_table_row(team):
     team_id = team.get("details", {}).get("id")
-    for table_group in team.get("table", []):
+    for table_group in (team.get("table") or []):
         rows = table_group.get("data", {}).get("table", {}).get("all", [])
         for row in rows:
             if row.get("id") == team_id:
@@ -297,7 +297,7 @@ def _competition(team):
     seasons = stats.get("tournamentSeasons", [])
     if seasons:
         return seasons[0].get("leagueName")
-    for table_group in team.get("table", []):
+    for table_group in (team.get("table") or []):
         league_name = table_group.get("data", {}).get("leagueName")
         if league_name:
             return league_name
