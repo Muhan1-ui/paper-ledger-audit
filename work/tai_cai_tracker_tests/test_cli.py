@@ -2552,6 +2552,7 @@ class CliWorkflowTests(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as temporary_directory:
             registry_path = Path(temporary_directory) / "source-links.json"
+            alias_path = Path(temporary_directory) / "source-aliases.json"
             tracker_cli.record_wikidata_team_identity(registry_path, identity)
             with patch("outputs.tai_cai_tracker.cli.collect_schedule", return_value={"matches": [match]}), \
                  patch("outputs.tai_cai_tracker.cli.discover_team_stats_url", side_effect=ValueError("stop")) as discover:
@@ -2559,6 +2560,7 @@ class CliWorkflowTests(unittest.TestCase):
                     hours_ahead=4,
                     now=now,
                     source_link_registry_path=registry_path,
+                    source_alias_registry_path=alias_path,
                 )
 
         self.assertEqual(discover.call_args_list[0].args, ("Inter Milan",))
@@ -2836,6 +2838,7 @@ class CliWorkflowTests(unittest.TestCase):
             temporary_path = Path(temporary_directory)
             registry_path = temporary_path / "source-links.json"
             progress_path = temporary_path / "historical-progress.json"
+            alias_path = temporary_path / "source-aliases.json"
             with patch(
                 "outputs.tai_cai_tracker.cli.collect_results",
                 return_value={"matches": [
@@ -2854,6 +2857,7 @@ class CliWorkflowTests(unittest.TestCase):
                     max_workers=1,
                     now=now,
                     source_link_registry_path=registry_path,
+                    source_alias_registry_path=alias_path,
                     progress_path=progress_path,
                 )
 
