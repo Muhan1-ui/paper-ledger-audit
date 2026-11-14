@@ -490,6 +490,7 @@ def main(argv=None):
             print(f"[info] pending: {item['zh']} ({item['reason']})", file=sys.stderr)
 
     summary = {
+        "timestamp": datetime.now(timezone.utc).astimezone().isoformat(),
         "scanned_matches": scanned_matches,
         "unique_names": len(candidate_names),
         "already_known": already_known,
