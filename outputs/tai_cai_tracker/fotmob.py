@@ -42,6 +42,8 @@ FOTMOB_SEARCH_ALIASES = {
     "卡尔马": "Kalmar FF",
     "佐加顿斯": "Djurgarden",
     "乌迪内斯": "Udinese",
+    "Atlético Mineiro": "Atlético-MG",
+    "Atletico Mineiro": "Atlético-MG",
     "拉齐奥": "Lazio",
     "埃斯托里": "Estoril",
     "阿罗卡": "Arouca",
