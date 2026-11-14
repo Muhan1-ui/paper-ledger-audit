@@ -434,8 +434,52 @@ def parse_stat_payload(
     raise ValueError(f"FotMob stat {stat_name} was not found for team {team_id}")
 
 
-def collect_team_stats(source_url):
-    """Fetch one FotMob team stats page and required public xG stat rows."""
+FOTMOB_STAT_URL = "https://data.fotmob.com/stats/{league_id}/season/{season_id}/{stat}.json"
+ROLLING_SEASON_LIMIT = 3
+ROLLING_SAMPLE_TARGET = 12
+
+
+def _rolling_stat_entry(team, contest, stat_name):
+    """Fetch one team's stat row for a past contest, or None when unavailable."""
+    league_id = contest.get("parentLeagueId")
+    season_id = contest.get("tournamentId")
+    if not league_id or not season_id:
+        return None
+    url = FOTMOB_STAT_URL.format(league_id=league_id, season_id=season_id, stat=stat_name)
+    try:
+        text, headers = _http_get(url, referer=team["source_url"])
+        return parse_stat_payload(
+            json.loads(text),
+            team_id=team["team_id"],
+            stat_name=stat_name,
+            source_url=url,
+            last_modified=headers.get("Last-Modified"),
+        )
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def _merge_stat_samples(base, extra):
+    """Fold a second contest's totals into the first, keeping both windows visible."""
+    merged = dict(base)
+    merged["value"] = str(_decimal(base["value"]) + _decimal(extra["value"]))
+    merged["sample_matches"] = (base.get("sample_matches") or 0) + (extra.get("sample_matches") or 0)
+    windows = list(base.get("sample_windows") or ([base["league_name"]] if base.get("league_name") else []))
+    windows.append(extra.get("league_name"))
+    merged["sample_windows"] = [name for name in windows if name]
+    merged["source_urls"] = list(base.get("source_urls") or [base.get("source_url")]) + [extra.get("source_url")]
+    return merged
+
+
+def collect_team_stats(source_url, rolling_seasons=ROLLING_SEASON_LIMIT, sample_target=ROLLING_SAMPLE_TARGET):
+    """Fetch one FotMob team stats page and required public xG stat rows.
+
+    A single contest often carries too few matches to clear the xG quality gate
+    (a national team four games into a Nations League season, for example).
+    When the primary season is short, fold the team's most recent prior contests
+    into the same totals so the sample reflects recent form rather than one
+    barely-started tournament.
+    """
     page_html, _headers = _http_get(source_url, referer="https://www.fotmob.com/")
     team = parse_team_page(page_html, source_url)
     def collect_stat(stat_name, stat_url):
@@ -456,6 +500,23 @@ def collect_team_stats(source_url):
             lambda item: collect_stat(*item),
             team["stat_urls"].items(),
         ))
+    past_contests = list(team.get("season_catalog") or [])[1:rolling_seasons]
+    if any((row.get("sample_matches") or 0) < sample_target for row in stats.values()):
+        for contest in past_contests:
+            extra = {name: _rolling_stat_entry(team, contest, name) for name in stats}
+            # Advance every stat together: a contest that only covers one of them
+            # would leave attack and defence with different denominators, which
+            # build_match_xg_evidence rejects.
+            if any(row is None or not row.get("sample_matches") for row in extra.values()):
+                continue
+            # FotMob can report different StatValueCount coverage per stat within
+            # one contest. Merging those would leave attack and defence on
+            # different denominators, which build_match_xg_evidence rejects.
+            if len({row["sample_matches"] for row in extra.values()}) != 1:
+                continue
+            stats = {name: _merge_stat_samples(stats[name], extra[name]) for name in stats}
+            if all((row.get("sample_matches") or 0) >= sample_target for row in stats.values()):
+                break
     team["stats"] = stats
     team["captured_at"] = datetime.now(timezone.utc).astimezone().isoformat()
     return team
