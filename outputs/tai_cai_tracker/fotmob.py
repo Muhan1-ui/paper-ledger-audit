@@ -17,6 +17,10 @@ from .transport import coordinated_public_request, proxy_mapping
 
 
 REQUIRED_XG_STATS = ("expected_goals_team", "expected_goals_conceded_team")
+FOTMOB_TEAM_REGISTRY_PATHS = (
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "source_aliases.json"),
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "source_link_registry.json"),
+)
 FOTMOB_SEARCH_URL = "https://www.fotmob.com/api/data/search/suggest?hits=50&lang=en&term={}"
 FOTMOB_SEARCH_ALIASES = {
     "朴次茅斯": "Portsmouth",
@@ -202,10 +206,49 @@ def collect_team_search_candidates(search_term):
     }
 
 
+def _registry_team_entry(team_name):
+    """Return the curated Chinese→FotMob team page for a name, when one exists.
+
+    FotMob's public search only indexes Latin team names: every Chinese name
+    came back with zero candidates, so the FotMob xG tier was skipped for most
+    fixtures and only Understat's six leagues ever produced xG. The local
+    registry already holds the resolved page for 277 Chinese names, so consult
+    it before spending a network round-trip that cannot succeed.
+    """
+    if not isinstance(team_name, str) or not team_name.strip():
+        return None
+    name = team_name.strip()
+    keys = (name, name.lower())
+    for path in FOTMOB_TEAM_REGISTRY_PATHS:
+        try:
+            with open(path, encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        teams = payload.get("aliases") if isinstance(payload.get("aliases"), dict) else payload.get("fotmob_teams")
+        if not isinstance(teams, dict):
+            continue
+        for key in keys:
+            entry = teams.get(key)
+            if isinstance(entry, dict) and entry.get("source_url"):
+                return dict(entry)
+    return None
+
+
 def discover_team_stats_url(team_name, minimum_score=0.90, tie_margin=0.04):
     """Resolve one public FotMob team page, refusing loose or tied name matches."""
     if not isinstance(team_name, str) or not team_name.strip():
         raise ValueError("FotMob team search requires a non-empty team name")
+    registry_entry = _registry_team_entry(team_name)
+    if registry_entry is not None:
+        score = registry_entry.get("score")
+        return {
+            **registry_entry,
+            "score": score if isinstance(score, (int, float)) and not isinstance(score, bool) else 1.0,
+            "search_url": registry_entry.get("search_url"),
+        }
     from .resolver import team_similarity
 
     search_name = FOTMOB_SEARCH_ALIASES.get(team_name.strip(), team_name.strip())
