@@ -17,6 +17,9 @@ INFORMATION BOUNDARY (must be preserved by any future change):
 2. Settlement records are read only in the P&L stage
    (``settle_bets`` / ``report``) to decide whether an already frozen paper bet
    won or lost. They never influence which bet was generated.
+3. ``odds_capture`` records are read only by ``_attach_clv`` to measure how the
+   market moved after a bet was frozen. They never influence selection, stake,
+   threshold, or settlement.
 
 Everything here is paper accounting. It is not a purchase instruction, a
 funding recommendation, or a claim that any outcome is guaranteed.
@@ -60,6 +63,27 @@ SELECTION_FIELDS = (
 # de-vigged European price itself (cross-book spread, no model involved).
 PROBABILITY_SOURCES = ("xg_blend", "market_spread")
 UNKNOWN_SOURCE = "unknown"
+
+# Closing-line value prefers the sharpest book in the capture set. The Chinese
+# label is the bookmaker string as recorded in ``odds_capture``; other labels
+# are compared verbatim.
+CROWN_BOOKMAKER = "皇冠"
+
+# Fields backfilled by ``_attach_clv``. Every field is written for every bet so
+# "no usable closing capture" stays an explicit null in the audit trail.
+CLV_FIELDS = (
+    "closing_odds",
+    "closing_captured_at",
+    "closing_bookmaker",
+    "closing_implied_prob",
+    "edge_at_close",
+    "clv_raw_pct",
+)
+
+# Bump when the CLV definition changes so previously written values are redone.
+# 1 = keyed on match_id alone, which mixed fixtures because sporttery reuses ids
+# weekly; 2 = keyed on (match_id, kickoff_at).
+CLV_VERSION = 2
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +283,29 @@ def _dedupe_by_match(
     return kept
 
 
+def _devig_probabilities(prices: Mapping[str, Any]) -> dict[str, Decimal] | None:
+    """Remove the bookmaker margin from a complete three-way price set.
+
+    Normalizes raw ``1/odds`` across the three outcomes. This is the same
+    additive de-vig bet selection uses to compare the model against the market,
+    so the closing-line figures share one implementation. Returns ``None``
+    unless all three prices are present, parseable, and positive.
+    """
+    inverses: dict[str, Decimal] = {}
+    for label in DEFAULT_OUTCOMES:
+        try:
+            price = _decimal(prices.get(label))
+        except Exception:
+            return None
+        if price <= 0:
+            return None
+        inverses[label] = Decimal(1) / price
+    total = sum(inverses.values(), Decimal(0))
+    if total <= 0:
+        return None
+    return {label: inverses[label] / total for label in DEFAULT_OUTCOMES}
+
+
 def _select_bet(
     record: Mapping[str, Any], threshold: Decimal, stake: float
 ) -> tuple[dict[str, Any] | None, str | None]:
@@ -287,7 +334,6 @@ def _select_bet(
         return None, "incomplete_outcomes"
 
     odds: dict[str, str] = {}
-    inverses: dict[str, Decimal] = {}
     for label in DEFAULT_OUTCOMES:
         raw = prizes.get(label)
         try:
@@ -297,15 +343,13 @@ def _select_bet(
         if price <= 0:
             return None, "non_positive_prize"
         odds[label] = str(raw)
-        inverses[label] = Decimal(1) / price
 
+    implied_prob = _devig_probabilities(prizes)
     psum = sum(probabilities.values(), Decimal(0))
-    inv_sum = sum(inverses.values(), Decimal(0))
-    if psum <= 0 or inv_sum <= 0:
+    if psum <= 0 or implied_prob is None:
         return None, "non_positive_probability_sum"
 
     model_prob = {label: probabilities[label] / psum for label in DEFAULT_OUTCOMES}
-    implied_prob = {label: inverses[label] / inv_sum for label in DEFAULT_OUTCOMES}
     edge = {label: model_prob[label] - implied_prob[label] for label in DEFAULT_OUTCOMES}
 
     best_label = max(DEFAULT_OUTCOMES, key=lambda label: edge[label])
@@ -458,7 +502,173 @@ def settle_bets(
 
 
 # ---------------------------------------------------------------------------
-# 3. Report
+# 3. Closing-line value -- pre-kickoff odds_capture records only
+# ---------------------------------------------------------------------------
+
+
+def _parse_captured_at(value: Any) -> datetime | None:
+    """Parse an ISO timestamp for ordering; ``None`` when absent or ambiguous.
+
+    Ledger evidence carries an explicit UTC offset. A naive timestamp cannot be
+    ordered against it without guessing a timezone, so it is treated as
+    unusable rather than silently assumed.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed
+
+
+def _match_key(row: Mapping[str, Any]) -> tuple[str, str] | None:
+    """Identify one fixture as ``(match_id, kickoff_at)``.
+
+    ``match_id`` alone is not unique: sporttery reuses numbers like 周二002 every
+    week, so 65 of 119 ids cover several different fixtures. Pairing the id with
+    the kickoff timestamp is what keeps one match's odds from being read as
+    another's closing line.
+    """
+    match_id = row.get("match_id")
+    kickoff_at = row.get("kickoff_at")
+    if match_id is None or kickoff_at is None:
+        return None
+    return (str(match_id), str(kickoff_at))
+
+
+def _closing_capture(
+    captures: Sequence[Mapping[str, Any]], after: datetime
+) -> Mapping[str, Any] | None:
+    """Latest capture strictly after ``after``; 皇冠 preferred when present.
+
+    ``captures`` must already be scoped to one match. The choice is
+    deterministic: among 皇冠 rows the latest timestamp wins, otherwise the
+    latest row from any bookmaker. A row without a usable timestamp is ignored.
+    """
+    later: list[tuple[datetime, Mapping[str, Any]]] = []
+    for row in captures:
+        captured_at = _parse_captured_at(row.get("captured_at"))
+        if captured_at is None or captured_at <= after:
+            continue
+        later.append((captured_at, row))
+    if not later:
+        return None
+    crown = [
+        item
+        for item in later
+        if str(item[1].get("bookmaker") or "").strip() == CROWN_BOOKMAKER
+    ]
+    pool = crown or later
+    return max(pool, key=lambda item: item[0])[1]
+
+
+def _clv_fields(
+    bet: Mapping[str, Any],
+    predicted_at: Mapping[str, Any],
+    captures_by_match: Mapping[str, Sequence[Mapping[str, Any]]],
+) -> dict[str, Any]:
+    """CLV fields for one bet; every field is ``None`` when not computable."""
+    blank: dict[str, Any] = {field: None for field in CLV_FIELDS}
+
+    after = _parse_captured_at(predicted_at.get(str(bet.get("content_hash"))))
+    key = _match_key(bet)
+    if after is None or key is None:
+        return blank
+    closing = _closing_capture(captures_by_match.get(key, ()), after)
+    if closing is None:
+        return blank
+
+    label = str(bet.get("label") or "")
+    closing_odds_map = closing.get("odds")
+    if not isinstance(closing_odds_map, Mapping):
+        closing_odds_map = {}
+    raw_close = closing_odds_map.get(label)
+    # Keep the price exactly as captured; never reformat observed evidence.
+    closing_odds = None if raw_close is None else str(raw_close)
+
+    implied = _devig_probabilities(closing_odds_map)
+    closing_implied = implied.get(label) if implied is not None else None
+
+    try:
+        bet_price = _decimal(bet.get("odds"))
+    except Exception:
+        bet_price = None
+
+    edge_at_close = None
+    if closing_implied is not None and bet_price is not None and bet_price > 0:
+        edge_at_close = closing_implied * bet_price - Decimal(1)
+
+    clv_raw_pct = None
+    try:
+        close_price = _decimal(raw_close)
+    except Exception:
+        close_price = None
+    if bet_price is not None and close_price is not None and close_price > 0:
+        ratio = (bet_price / close_price - Decimal(1)) * Decimal(100)
+        clv_raw_pct = format(ratio.quantize(MONEY_PLACES, rounding=ROUND_HALF_UP), "f")
+
+    return {
+        "closing_odds": closing_odds,
+        "closing_captured_at": closing.get("captured_at"),
+        "closing_bookmaker": closing.get("bookmaker"),
+        "closing_implied_prob": None if closing_implied is None else _prob_text(closing_implied),
+        "edge_at_close": None if edge_at_close is None else _prob_text(edge_at_close),
+        "clv_raw_pct": clv_raw_pct,
+    }
+
+
+def _attach_clv(
+    bets: Sequence[dict[str, Any]],
+    ledger_rows: Sequence[Mapping[str, Any]],
+    out_path: str | os.PathLike[str] = DEFAULT_OUT,
+) -> int:
+    """Backfill closing-line value fields onto paper bets, idempotently.
+
+    ``odds_capture`` records describe how the market moved after the prediction
+    was frozen. They are used here only for measurement; bet selection and
+    settlement never read them. A bet whose ``edge_at_close`` is already a
+    non-null value is left untouched. Records without a usable closing capture
+    get every CLV field written as ``null`` so the gap is explicit rather than
+    inferred. Returns the number of bets rewritten; no write happens when
+    nothing changed, so repeated runs are safe.
+    """
+    predicted_at: dict[str, Any] = {}
+    captures_by_match: dict[str, list[Mapping[str, Any]]] = {}
+    for row in ledger_rows:
+        record_type = row.get("record_type")
+        if record_type == "prediction":
+            digest = row.get("content_hash")
+            if digest is not None:
+                predicted_at.setdefault(str(digest), row.get("captured_at"))
+        elif record_type == "odds_capture":
+            key = _match_key(row)
+            if key is not None:
+                captures_by_match.setdefault(key, []).append(row)
+
+    changed = 0
+    for bet in bets:
+        if bet.get("clv_version") == CLV_VERSION:
+            continue  # already measured under the current match-key scheme
+        desired = _clv_fields(bet, predicted_at, captures_by_match)
+        desired["clv_version"] = CLV_VERSION
+        if all(field in bet and bet.get(field) == value for field, value in desired.items()):
+            continue
+        bet.update(desired)
+        changed += 1
+
+    if changed:
+        _write_jsonl_atomic(out_path, bets)
+    return changed
+
+
+# ---------------------------------------------------------------------------
+# 4. Report
 # ---------------------------------------------------------------------------
 
 
@@ -603,6 +813,8 @@ def report(
     historical evidence and is printed afterwards as a comparison only.
     """
     bets = _read_jsonl(out_path)
+    # boundary: closes come from odds_capture only, never from settlements.
+    _attach_clv(bets, _read_jsonl(ledger_path), out_path)
     selection = _selection_records(ledger_path)  # boundary: predictions only
     unique_matches = len(_dedupe_by_match(selection))
 
@@ -640,6 +852,8 @@ def report(
         print()
 
     _print_comparison(all_stats, current_strategy)
+    print()
+    _print_clv(bets)
     return all_stats
 
 
@@ -662,6 +876,60 @@ def _print_comparison(
             f"t {t_text} "
             f"最大回撤 {_money_text(stats['max_drawdown'])}"
         )
+
+
+def _median(values: Sequence[Decimal]) -> Decimal | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / Decimal(2)
+
+
+def _signed_pct(value: Decimal) -> str:
+    """A percentage that already carries its sign, e.g. ``+3.21%``."""
+    return format(value * 100, "+.2f") + "%"
+
+
+def _print_clv(bets: Sequence[Mapping[str, Any]]) -> None:
+    """Closing-line value: did the price taken still beat the closing market?
+
+    CLV is judged without waiting for results, so it needs far fewer bets than
+    ROI to falsify an edge. It is reported across every strategy in the file so
+    the sample stays as large as the record allows; it is never summed into the
+    per-strategy ROI figures above.
+    """
+    total = len(bets)
+    edges = [
+        _decimal(bet["edge_at_close"])
+        for bet in bets
+        if bet.get("edge_at_close") is not None
+    ]
+    raw_pcts = [_decimal(bet["clv_raw_pct"]) for bet in bets if bet.get("clv_raw_pct")]
+
+    print("收盘线价值 CLV（判定 edge 真假的先行指标）")
+    share = _ratio(Decimal(len(edges)), Decimal(total)) if total else None
+    print(f"  可追踪: {len(edges)}/{total} 注 ({_pct(share)})")
+
+    if len(edges) < 2:
+        print("  edge_at_close 均值: N/A  中位数: N/A")
+        print("  收盘仍有正 edge: N/A")
+    else:
+        mean = sum(edges, Decimal(0)) / Decimal(len(edges))
+        median = _median(edges)
+        median_text = "N/A" if median is None else _signed_pct(median)
+        positive = sum(1 for value in edges if value > 0)
+        positive_share = _pct(_ratio(Decimal(positive), Decimal(len(edges))))
+        print(f"  edge_at_close 均值: {_signed_pct(mean)}  中位数: {median_text}")
+        print(f"  收盘仍有正 edge: {positive} 注 ({positive_share})")
+
+    if len(raw_pcts) < 2:
+        print("  CLV 原始赔率差 均值: N/A（含跨庄抽水差，仅参考）")
+    else:
+        raw_mean = sum(raw_pcts, Decimal(0)) / Decimal(len(raw_pcts))
+        print(f"  CLV 原始赔率差 均值: {format(raw_mean, '+.2f')}%（含跨庄抽水差，仅参考）")
 
 
 def _print_stats(stats: Mapping[str, Any], heading: str) -> None:
@@ -780,7 +1048,7 @@ def _backfill_probability_source(
 
 
 # ---------------------------------------------------------------------------
-# 4. CLI
+# 5. CLI
 # ---------------------------------------------------------------------------
 
 
