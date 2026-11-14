@@ -9,9 +9,11 @@ INFORMATION BOUNDARY (must be preserved by any future change):
 
 1. Bet selection (``generate_bets``) may read only frozen ``prediction``
    records and only the fields ``match_id``, ``content_hash``, ``kickoff_at``,
-   ``match_context``, ``outcomes`` and ``fixed_prizes``. It must never look at
-   ``settlement`` / ``settlement_invalidation`` records, otherwise the choice of
-   bet would be contaminated by the known result.
+   ``match_context``, ``outcomes``, ``fixed_prizes`` and ``model``. ``model`` is
+   read solely to tag a bet's ``probability_source`` provenance; it never
+   affects which outcome is selected. It must never look at ``settlement`` /
+   ``settlement_invalidation`` records, otherwise the choice of bet would be
+   contaminated by the known result.
 2. Settlement records are read only in the P&L stage
    (``settle_bets`` / ``report``) to decide whether an already frozen paper bet
    won or lost. They never influence which bet was generated.
@@ -42,7 +44,8 @@ DEFAULT_OUTCOMES = ("home_win", "draw", "away_win")
 PROBABILITY_PLACES = Decimal("0.0000000001")  # 10 decimal places
 MONEY_PLACES = Decimal("0.01")
 
-# The only prediction fields allowed to influence bet selection.
+# Prediction fields read during bet generation. ``model`` is provenance only:
+# it is used to label ``probability_source`` and never enters bet selection.
 SELECTION_FIELDS = (
     "match_id",
     "content_hash",
@@ -50,7 +53,13 @@ SELECTION_FIELDS = (
     "match_context",
     "outcomes",
     "fixed_prizes",
+    "model",
 )
+
+# A bet's probability is either a 0.7*European + 0.3*xG-Poisson blend or the
+# de-vigged European price itself (cross-book spread, no model involved).
+PROBABILITY_SOURCES = ("xg_blend", "market_spread")
+UNKNOWN_SOURCE = "unknown"
 
 
 # ---------------------------------------------------------------------------
@@ -152,6 +161,38 @@ def _parse_kickoff(value: Any) -> tuple[int, str]:
         return (0, datetime.fromisoformat(text).isoformat())
     except ValueError:
         return (1, text)
+
+
+def _probability_source(record: Mapping[str, Any]) -> str:
+    """``xg_blend`` when the prediction carries blended model outcomes.
+
+    Otherwise the frozen probabilities came from the de-vigged European
+    prices, i.e. a cross-book spread with no model input.
+    """
+    model = record.get("model")
+    if isinstance(model, Mapping) and model.get("blended_outcomes"):
+        return "xg_blend"
+    return "market_spread"
+
+
+def _prediction_sources(ledger_path: str | os.PathLike[str]) -> dict[str, str]:
+    """Map prediction ``content_hash`` -> probability source.
+
+    Used to backfill historical bets and as a fallback when a bet record
+    predates the ``probability_source`` field.
+    """
+    sources: dict[str, str] = {}
+    for record in _read_jsonl(ledger_path):
+        if record.get("record_type") != "prediction":
+            continue
+        content_hash = record.get("content_hash")
+        if not content_hash:
+            continue
+        source = _probability_source(record)
+        # One hash backed by an xG blend must never be downgraded.
+        if sources.get(str(content_hash)) != "xg_blend":
+            sources[str(content_hash)] = source
+    return sources
 
 
 # ---------------------------------------------------------------------------
@@ -291,6 +332,7 @@ def _select_bet(
         "edge": _prob_text(edge[best_label]),
         "threshold": float(threshold),
         "strategy": strategy,
+        "probability_source": _probability_source(record),
     }
     return bet, None
 
@@ -578,6 +620,13 @@ def report(
         f"（去重 {len(selection) - unique_matches} 条同日重复）"
     )
     print(f"注单总数: {len(bets)}")
+    source_totals: dict[str, int] = {}
+    for bet in bets:
+        key = str(bet.get("probability_source") or "unknown")
+        source_totals[key] = source_totals.get(key, 0) + 1
+    if source_totals:
+        parts = " / ".join(f"{name} {count} 注" for name, count in sorted(source_totals.items()))
+        print(f"概率来源: {parts}")
     if current_strategy not in by_strategy:
         print(f"当前策略 {current_strategy}: 暂无注单")
     print()
@@ -587,6 +636,7 @@ def report(
         stats = _strategy_stats(strategy, by_strategy[strategy])
         all_stats.append(stats)
         _print_stats(stats, _strategy_heading(strategy, current_strategy))
+        _print_source_breakdown(by_strategy[strategy])
         print()
 
     _print_comparison(all_stats, current_strategy)
@@ -655,6 +705,80 @@ def _print_stats(stats: Mapping[str, Any], heading: str) -> None:
         )
 
 
+SOURCE_LABELS = {"xg_blend": "xg_blend", "market_spread": "market_spread"}
+SOURCE_NOTES = {
+    "xg_blend": "0.7×欧赔 + 0.3×xG泊松，真模型参与",
+    "market_spread": "纯欧赔去水 vs 体彩，跨庄价差，模型未参与",
+}
+
+
+def _print_source_breakdown(bets: Sequence[Mapping[str, Any]]) -> None:
+    """Split one strategy by where its probabilities came from.
+
+    The two sources are not comparable: ``xg_blend`` carries model input while
+    ``market_spread`` is a cross-bookmaker price gap with no model involved.
+    Mixing them hides which one actually earns, so always show them apart.
+    """
+    by_source: dict[str, list[Mapping[str, Any]]] = {}
+    for bet in bets:
+        source = str(bet.get("probability_source") or "unknown")
+        by_source.setdefault(source, []).append(bet)
+
+    if len(by_source) < 2:
+        return
+
+    print("  按概率来源拆分:")
+    for source in sorted(by_source):
+        stats = _strategy_stats(source, by_source[source])
+        t_text = "N/A" if stats["t_stat"] is None else format(stats["t_stat"], ".2f")
+        note = SOURCE_NOTES.get(source, "来源未知")
+        print(
+            f"    {SOURCE_LABELS.get(source, source):<14}"
+            f"n={stats['settled_bets']:<4}"
+            f"净{_money_text(stats['net']):>9} "
+            f"ROI{_pct(stats['roi']):>9} "
+            f"命中{_pct(stats['hit_rate']):>7} "
+            f"t={t_text}   {note}"
+        )
+
+
+def _backfill_probability_source(
+    out_path: str | os.PathLike[str], ledger_path: str | os.PathLike[str]
+) -> int:
+    """Stamp ``probability_source`` onto bets written before the field existed.
+
+    Bets are keyed by content_hash, so the frozen prediction behind each bet
+    can be looked up directly. Idempotent: only records missing the field are
+    rewritten, and the write is skipped entirely when nothing is missing.
+    """
+    bets = _read_jsonl(out_path)
+    if not bets or all(bet.get("probability_source") for bet in bets):
+        return 0
+
+    records = _read_jsonl(ledger_path)
+    by_hash: dict[str, Mapping[str, Any]] = {}
+    for record in records:
+        if record.get("record_type") == "prediction":
+            digest = record.get("content_hash")
+            if isinstance(digest, str):
+                by_hash[digest] = record
+
+    filled = 0
+    updated: list[dict[str, Any]] = []
+    for bet in bets:
+        item = dict(bet)
+        if not item.get("probability_source"):
+            prediction = by_hash.get(str(item.get("content_hash")))
+            if prediction is not None:
+                item["probability_source"] = _probability_source(prediction)
+                filled += 1
+        updated.append(item)
+
+    if filled:
+        _write_jsonl_atomic(out_path, updated)
+    return filled
+
+
 # ---------------------------------------------------------------------------
 # 4. CLI
 # ---------------------------------------------------------------------------
@@ -708,6 +832,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     new_bets: list[dict[str, Any]] = []
     updated = 0
     if not args.report_only:
+        filled = _backfill_probability_source(args.out, args.ledger)
+        if filled and not args.no_report:
+            print(f"补齐概率来源字段: {filled} 条旧注单")
         new_bets = generate_bets(
             args.ledger, args.out, threshold=args.threshold, stake=args.stake
         )
