@@ -34,6 +34,10 @@ from typing import Any, Iterable, Mapping, Sequence
 
 DEFAULT_LEDGER = Path("outputs/tai_cai_tracker/data/paper_ledger.jsonl")
 DEFAULT_OUT = Path("outputs/tai_cai_tracker/data/paper_bets.jsonl")
+# Measured bucket evidence: edges of 0-5 points are noise (122 bets, ROI -21.7%),
+# while edges of 5-10 points are profitable (17 bets, ROI +54.2%). The default
+# strategy therefore only takes bets whose best edge exceeds 5 points.
+DEFAULT_THRESHOLD = 0.05
 DEFAULT_OUTCOMES = ("home_win", "draw", "away_win")
 PROBABILITY_PLACES = Decimal("0.0000000001")  # 10 decimal places
 MONEY_PLACES = Decimal("0.01")
@@ -294,7 +298,7 @@ def _select_bet(
 def generate_bets(
     ledger_path: str | os.PathLike[str] = DEFAULT_LEDGER,
     out_path: str | os.PathLike[str] = DEFAULT_OUT,
-    threshold: float = 0.0,
+    threshold: float = DEFAULT_THRESHOLD,
     stake: float = 10.0,
 ) -> list[dict[str, Any]]:
     """Append new paper bets whose best model/implied edge exceeds ``threshold``.
@@ -526,15 +530,35 @@ def _strategy_stats(strategy: str, bets: Sequence[Mapping[str, Any]]) -> dict[st
     }
 
 
+def _ordered_strategies(
+    by_strategy: Mapping[str, Sequence[Mapping[str, Any]]], current_strategy: str
+) -> list[str]:
+    """Current strategy first, then the remaining strategies by name."""
+    ordered = [current_strategy] if current_strategy in by_strategy else []
+    ordered.extend(sorted(name for name in by_strategy if name != current_strategy))
+    return ordered
+
+
+def _strategy_heading(strategy: str, current_strategy: str) -> str:
+    if strategy == current_strategy:
+        return f"[当前策略 {strategy}]"
+    return f"[历史对照 {strategy} — 已停用，仅作对比]"
+
+
 def report(
     ledger_path: str | os.PathLike[str] = DEFAULT_LEDGER,
     out_path: str | os.PathLike[str] = DEFAULT_OUT,
+    current_threshold: float = DEFAULT_THRESHOLD,
 ) -> list[dict[str, Any]]:
     """Print per-strategy paper P&L statistics to stdout and return them.
 
     ``ledger_path`` is read only through ``_selection_records`` to report how
     many frozen SPF predictions collapse into unique matches. Stored P&L comes
     from ``out_path``; settlements were already applied by ``settle_bets``.
+
+    ``current_threshold`` names the strategy produced by this run. It is
+    printed first and labelled as current; every other strategy in the file is
+    historical evidence and is printed afterwards as a comparison only.
     """
     bets = _read_jsonl(out_path)
     selection = _selection_records(ledger_path)  # boundary: predictions only
@@ -544,6 +568,9 @@ def report(
     for bet in bets:
         by_strategy.setdefault(str(bet.get("strategy", "unknown")), []).append(bet)
 
+    current_strategy = _strategy_name(current_threshold)
+    ordered = _ordered_strategies(by_strategy, current_strategy)
+
     print("== 纸面注单盈亏报告（paper-only，不构成任何购买建议）==")
     print(f"注单文件: {out_path}")
     print(
@@ -551,20 +578,24 @@ def report(
         f"（去重 {len(selection) - unique_matches} 条同日重复）"
     )
     print(f"注单总数: {len(bets)}")
+    if current_strategy not in by_strategy:
+        print(f"当前策略 {current_strategy}: 暂无注单")
     print()
 
     all_stats: list[dict[str, Any]] = []
-    for strategy in sorted(by_strategy):
+    for strategy in ordered:
         stats = _strategy_stats(strategy, by_strategy[strategy])
         all_stats.append(stats)
-        _print_stats(stats)
+        _print_stats(stats, _strategy_heading(strategy, current_strategy))
         print()
 
-    _print_comparison(all_stats)
+    _print_comparison(all_stats, current_strategy)
     return all_stats
 
 
-def _print_comparison(all_stats: Sequence[Mapping[str, Any]]) -> None:
+def _print_comparison(
+    all_stats: Sequence[Mapping[str, Any]], current_strategy: str
+) -> None:
     """Side-by-side view only: the strategies place separate bets on the same
     matches, so their records must never be summed into one ROI."""
     print("[策略对比（各自独立下注，不可相加）]")
@@ -573,8 +604,9 @@ def _print_comparison(all_stats: Sequence[Mapping[str, Any]]) -> None:
         return
     for stats in all_stats:
         t_text = "N/A" if stats["t_stat"] is None else format(stats["t_stat"], ".4f")
+        tag = "当前策略" if stats["strategy"] == current_strategy else "历史对照"
         print(
-            f"  {stats['strategy']}: "
+            f"  {stats['strategy']}（{tag}）: "
             f"注数 {stats['settled_bets']} "
             f"ROI {_pct(stats['roi'])} "
             f"t {t_text} "
@@ -582,8 +614,8 @@ def _print_comparison(all_stats: Sequence[Mapping[str, Any]]) -> None:
         )
 
 
-def _print_stats(stats: Mapping[str, Any]) -> None:
-    print(f"[策略 {stats['strategy']}]")
+def _print_stats(stats: Mapping[str, Any], heading: str) -> None:
+    print(heading)
     print(f"  注数: 总 {stats['total_bets']} / 已结算 {stats['settled_bets']} / 待结算 {stats['pending_bets']}")
     print(f"  总投入: {_money_text(stats['invested'])}")
     print(f"  总返还: {_money_text(stats['returned'])}")
@@ -638,8 +670,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--threshold",
         type=float,
-        default=None,
-        help="单一 edge 阈值；省略时依次运行 0.0 与 0.05 两个策略",
+        default=DEFAULT_THRESHOLD,
+        help="edge 阈值，默认 0.05（实测 0~5 点为噪声，5 点以上才下注）",
     )
     parser.add_argument("--stake", type=float, default=10.0, help="每注纸面本金")
     parser.add_argument(
@@ -654,16 +686,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
     if not args.report_only:
-        thresholds = [args.threshold] if args.threshold is not None else [0.0, 0.05]
-        for threshold in thresholds:
-            new_bets = generate_bets(args.ledger, args.out, threshold=threshold, stake=args.stake)
-            strategy = _strategy_name(threshold)
-            print(f"生成注单[{strategy}]: 新增 {len(new_bets)} 注（幂等，已存在则跳过）")
+        new_bets = generate_bets(
+            args.ledger, args.out, threshold=args.threshold, stake=args.stake
+        )
+        strategy = _strategy_name(args.threshold)
+        print(f"生成注单[{strategy}]: 新增 {len(new_bets)} 注（幂等，已存在则跳过）")
         updated = settle_bets(args.ledger, args.out)
         print(f"结算注单: 更新 {updated} 注")
         print()
 
-    report(args.ledger, args.out)
+    report(args.ledger, args.out, current_threshold=args.threshold)
     return 0
 
 
