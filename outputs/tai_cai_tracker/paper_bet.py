@@ -653,11 +653,12 @@ def _attach_clv(
 
     changed = 0
     for bet in bets:
-        if bet.get("clv_version") == CLV_VERSION:
-            continue  # already measured under the current match-key scheme
+        # Recomputed on every run: the closing price keeps moving until kickoff,
+        # so a frozen value would go stale. Only a real change is persisted, which
+        # keeps repeated runs idempotent.
         desired = _clv_fields(bet, predicted_at, captures_by_match)
         desired["clv_version"] = CLV_VERSION
-        if all(field in bet and bet.get(field) == value for field, value in desired.items()):
+        if all(bet.get(field) == value for field, value in desired.items()):
             continue
         bet.update(desired)
         changed += 1

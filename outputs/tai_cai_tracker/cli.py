@@ -17,6 +17,10 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
+# Bookmaker whose price is treated as the sharp anchor. Named here rather than
+# inline because the odds-refresh stage and the CLV maths must agree on it.
+CROWN_BOOKMAKER = "皇冠"
+
 from .ledger import (
     OUTCOME_LABELS,
     ALL_MARKET_OPTIONS,
@@ -4127,6 +4131,107 @@ def _official_result_deduplication_key(result):
     )
 
 
+def odds_refresh(ledger_path, max_hours_ahead=6.0):
+    with _ledger_operation_lock(ledger_path):
+        return _odds_refresh(ledger_path, max_hours_ahead=max_hours_ahead)
+
+
+def _same_odds(left, right):
+    if not isinstance(left, Mapping) or not isinstance(right, Mapping):
+        return False
+    return all(str(left.get(label)) == str(right.get(label)) for label in OUTCOME_LABELS)
+
+
+def _odds_refresh(ledger_path, max_hours_ahead=6.0):
+    """Re-capture the crown price for frozen fixtures that have not kicked off.
+
+    A prediction is frozen once, 30-60 minutes before kickoff, so a fixture
+    normally ends up with a single odds_capture row -- 207 of 224 fixtures did.
+    CLV needs the price at more than one point in time, so this stage revisits
+    every frozen fixture still ahead of us and appends a capture whenever the
+    crown price has actually moved. Unchanged prices are skipped so the ledger
+    keeps a price trace instead of one row per poll.
+    """
+    records = read_records(ledger_path)
+    now = datetime.now(timezone.utc)
+    horizon = now + timedelta(hours=float(max_hours_ahead))
+
+    fixtures = {}
+    for record in records:
+        if record.get("record_type") != "prediction" or record.get("status") != "frozen":
+            continue
+        key = (str(record.get("match_id")), str(record.get("kickoff_at")))
+        fixtures.setdefault(key, record)
+
+    # Latest capture per fixture, keyed the same way. match_id alone is reused
+    # weekly by sporttery, so it must never be the sole key.
+    latest = {}
+    for record in records:
+        if record.get("record_type") != "odds_capture":
+            continue
+        key = (str(record.get("match_id")), str(record.get("kickoff_at")))
+        captured_at = str(record.get("captured_at") or "")
+        if key not in latest or captured_at > str(latest[key].get("captured_at") or ""):
+            latest[key] = record
+
+    scanned = refreshed = written = no_crown = failed = 0
+    for key, prediction in sorted(fixtures.items()):
+        kickoff_at = prediction.get("kickoff_at")
+        try:
+            kickoff = _timestamp(kickoff_at, "kickoff_at")
+        except ValueError:
+            continue
+        if not now < kickoff <= horizon:
+            continue
+        scanned += 1
+        source_url = (prediction.get("source_urls") or {}).get("S2")
+        if not isinstance(source_url, str) or not source_url:
+            no_crown += 1
+            continue
+        try:
+            capture = collect_433(source_url)
+        except Exception:
+            failed += 1
+            continue
+        prices = None
+        for row in (capture.get("market") or {}).get("rows") or []:
+            if row.get("bookmaker") == CROWN_BOOKMAKER:
+                prices = row.get("prices")
+                break
+        if not isinstance(prices, Mapping):
+            no_crown += 1
+            continue
+        refreshed += 1
+        previous = latest.get(key)
+        if previous is not None and _same_odds(previous.get("odds"), prices):
+            continue
+        try:
+            decimal_odds = {label: Decimal(str(prices[label])) for label in OUTCOME_LABELS}
+        except (KeyError, InvalidOperation):
+            no_crown += 1
+            continue
+        _append_record(ledger_path, freeze_odds_capture({
+            "provider": capture["provider"],
+            "match_id": prediction.get("match_id"),
+            "kickoff_at": kickoff_at,
+            "captured_at": capture["captured_at"],
+            "source_url": capture["source_url"],
+            "bookmaker": CROWN_BOOKMAKER,
+            "source_quality": "named_bookmaker",
+            "odds": decimal_odds,
+        }))
+        written += 1
+        latest[key] = {"odds": prices, "captured_at": capture["captured_at"]}
+
+    return {
+        "scanned": scanned,
+        "refreshed": refreshed,
+        "written": written,
+        "no_crown": no_crown,
+        "failed": failed,
+    }
+
+
 def sporttery_settle_batch(ledger_path, match_dates=()):
     with _ledger_operation_lock(ledger_path):
         return _sporttery_settle_batch(ledger_path, match_dates=match_dates)
@@ -4514,6 +4619,13 @@ def _build_parser():
     )
     sporttery_settle_batch_parser.add_argument("ledger_path")
     sporttery_settle_batch_parser.add_argument("--match-date", action="append", default=[])
+
+    odds_refresh_parser = commands.add_parser(
+        "odds-refresh",
+        help="re-capture crown prices for frozen fixtures that have not kicked off",
+    )
+    odds_refresh_parser.add_argument("ledger_path")
+    odds_refresh_parser.add_argument("--max-hours-ahead", type=float, default=6.0)
 
     european_433_extract_parser = commands.add_parser(
         "european-433-extract",
@@ -4963,6 +5075,16 @@ def main(argv=None):
                 ensure_ascii=False,
                 sort_keys=True,
             ))
+        elif arguments.command == "odds-refresh":
+            print(
+                "赔率跟踪: 扫描 {scanned} 场, 刷新成功 {refreshed} 场, "
+                "价格变动写入 {written} 条, 无皇冠 {no_crown} 场, 抓取失败 {failed} 场".format(
+                    **odds_refresh(
+                        arguments.ledger_path,
+                        max_hours_ahead=arguments.max_hours_ahead,
+                    )
+                )
+            )
         elif arguments.command == "european-433-extract":
             print(json.dumps(
                 collect_433(arguments.source_url),

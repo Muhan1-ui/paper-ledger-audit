@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("preflight", "prematch", "settle", "status", "cycle")]
+    [ValidateSet("preflight", "prematch", "odds-refresh", "settle", "status", "cycle")]
     [string]$Mode = "prematch",
     [string]$PythonPath
 )
@@ -32,7 +32,7 @@ function Write-SchedulerEntry {
 
 function Invoke-TrackerStage {
     param(
-        [ValidateSet("preflight", "prematch", "settle", "status")]
+        [ValidateSet("preflight", "prematch", "odds-refresh", "settle", "status")]
         [string]$Stage
     )
 
@@ -72,6 +72,11 @@ function Invoke-TrackerStage {
                 [pscustomobject]@{
                     last_completed_at = (Get-Date).ToString("o")
                 } | ConvertTo-Json -Compress | Set-Content -Path $PrematchStatePath -Encoding utf8
+            } elseif ($Stage -eq "odds-refresh") {
+                $Output = & $Python -m outputs.tai_cai_tracker.cli odds-refresh $Ledger --max-hours-ahead 6 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    throw "odds refresh command failed with exit code $LASTEXITCODE"
+                }
             } else {
                 $SettlementOutput = & $Python -m outputs.tai_cai_tracker.cli sporttery-settle-batch $Ledger 2>&1
                 if ($LASTEXITCODE -ne 0) {
@@ -136,7 +141,7 @@ try {
     }
 
     $Stages = @()
-    foreach ($Stage in ("preflight", "prematch", "settle")) {
+    foreach ($Stage in ("preflight", "prematch", "odds-refresh", "settle")) {
         $Stages += Invoke-TrackerStage $Stage
     }
     $FailedStages = @($Stages | Where-Object { $_.status -eq "failed" })
