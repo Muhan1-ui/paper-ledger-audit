@@ -679,21 +679,53 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="只输出报告，不生成或结算注单",
     )
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="只生成/结算注单，不打印盈亏报告",
+    )
     return parser
+
+
+def _summary_line(
+    strategy: str,
+    out_path: str | os.PathLike[str],
+    n_new: int,
+    n_settle: int,
+) -> str:
+    """One-line summary for scheduler logs; counts are recomputed on read."""
+    current = [bet for bet in _read_jsonl(out_path) if str(bet.get("strategy")) == strategy]
+    n_settled = sum(1 for bet in current if _is_settled(bet))
+    return (
+        f"纸面投注: 新增 {n_new} 注, 结算 {n_settle} 注, "
+        f"当前策略 {strategy} 累计 {len(current)} 注 (已结算 {n_settled})"
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
+    new_bets: list[dict[str, Any]] = []
+    updated = 0
     if not args.report_only:
         new_bets = generate_bets(
             args.ledger, args.out, threshold=args.threshold, stake=args.stake
         )
         strategy = _strategy_name(args.threshold)
-        print(f"生成注单[{strategy}]: 新增 {len(new_bets)} 注（幂等，已存在则跳过）")
+        if not args.no_report:
+            print(f"生成注单[{strategy}]: 新增 {len(new_bets)} 注（幂等，已存在则跳过）")
         updated = settle_bets(args.ledger, args.out)
-        print(f"结算注单: 更新 {updated} 注")
-        print()
+        if not args.no_report:
+            print(f"结算注单: 更新 {updated} 注")
+            print()
+
+    if args.no_report:
+        print(
+            _summary_line(
+                _strategy_name(args.threshold), args.out, len(new_bets), updated
+            )
+        )
+        return 0
 
     report(args.ledger, args.out, current_threshold=args.threshold)
     return 0

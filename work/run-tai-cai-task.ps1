@@ -81,7 +81,11 @@ function Invoke-TrackerStage {
                 if ($LASTEXITCODE -ne 0) {
                     throw "report command failed with exit code $LASTEXITCODE"
                 }
-                $Output = @($SettlementOutput; $Report)
+                $PaperBetOutput = & $Python -m outputs.tai_cai_tracker.paper_bet --no-report 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    throw "paper bet command failed with exit code $LASTEXITCODE"
+                }
+                $Output = @($SettlementOutput; $Report; $PaperBetOutput)
             }
         } finally {
             Pop-Location
