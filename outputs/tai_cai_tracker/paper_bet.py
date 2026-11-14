@@ -174,6 +174,46 @@ def _selection_records(ledger_path: str | os.PathLike[str]) -> list[dict[str, An
     return selected
 
 
+def _match_identity(record: Mapping[str, Any]) -> tuple[str, str] | None:
+    """(match_id, kickoff_at) for one prediction, or ``None`` when unusable.
+
+    The ledger legitimately contains two frozen ``primary`` rows for the same
+    fixture (same ``match_id`` and ``kickoff_at``) whose ``content_hash``
+    differs only because ``captured_at`` and the European odds capture were
+    re-taken. A paper bet must not place the same match twice, so bet
+    generation collapses them by this identity.
+    """
+    match_id = record.get("match_id")
+    kickoff_at = record.get("kickoff_at")
+    if not match_id or not kickoff_at:
+        return None
+    return (str(match_id), str(kickoff_at))
+
+
+def _dedupe_by_match(
+    records: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Keep one prediction per ``(match_id, kickoff_at)``, lowest hash first.
+
+    Ordering by ``content_hash`` makes the survivor deterministic and
+    reproducible. Records without a usable match identity are passed through
+    unchanged rather than being collapsed together.
+    """
+    ordered = sorted(records, key=lambda record: str(record.get("content_hash") or ""))
+    seen: set[tuple[str, str]] = set()
+    kept: list[dict[str, Any]] = []
+    for record in ordered:
+        identity = _match_identity(record)
+        if identity is None:
+            kept.append(dict(record))
+            continue
+        if identity in seen:
+            continue
+        seen.add(identity)
+        kept.append(dict(record))
+    return kept
+
+
 def _select_bet(
     record: Mapping[str, Any], threshold: Decimal, stake: float
 ) -> tuple[dict[str, Any] | None, str | None]:
@@ -259,9 +299,16 @@ def generate_bets(
 ) -> list[dict[str, Any]]:
     """Append new paper bets whose best model/implied edge exceeds ``threshold``.
 
-    Idempotent: a bet already present in ``out_path`` with the same
-    ``(content_hash, label, strategy)`` is skipped, so repeated runs never
-    double-count. Returns only the records appended by this call.
+    Two independent de-duplication layers apply:
+
+    1. Match level: only the lowest-``content_hash`` prediction per
+       ``(match_id, kickoff_at)`` may produce a bet, so one fixture never
+       yields two paper bets.
+    2. Idempotency: a bet already present in ``out_path`` with the same
+       ``(content_hash, label, strategy)`` is skipped, so repeated runs never
+       double-count.
+
+    Returns only the records appended by this call.
     """
     if stake <= 0:
         raise ValueError("stake must be positive")
@@ -269,7 +316,8 @@ def generate_bets(
 
     existing = {_bet_key(record) for record in _read_jsonl(out_path)}
     new_bets: list[dict[str, Any]] = []
-    for record in _selection_records(ledger_path):  # boundary: predictions only
+    # boundary: predictions only, then one record per match.
+    for record in _dedupe_by_match(_selection_records(ledger_path)):
         bet, _reason = _select_bet(record, threshold_dec, stake)
         if bet is None:
             continue
@@ -482,9 +530,15 @@ def report(
     ledger_path: str | os.PathLike[str] = DEFAULT_LEDGER,
     out_path: str | os.PathLike[str] = DEFAULT_OUT,
 ) -> list[dict[str, Any]]:
-    """Print per-strategy paper P&L statistics to stdout and return them."""
-    del ledger_path  # Report uses stored P&L; settlements already applied.
+    """Print per-strategy paper P&L statistics to stdout and return them.
+
+    ``ledger_path`` is read only through ``_selection_records`` to report how
+    many frozen SPF predictions collapse into unique matches. Stored P&L comes
+    from ``out_path``; settlements were already applied by ``settle_bets``.
+    """
     bets = _read_jsonl(out_path)
+    selection = _selection_records(ledger_path)  # boundary: predictions only
+    unique_matches = len(_dedupe_by_match(selection))
 
     by_strategy: dict[str, list[Mapping[str, Any]]] = {}
     for bet in bets:
@@ -492,6 +546,10 @@ def report(
 
     print("== 纸面注单盈亏报告（paper-only，不构成任何购买建议）==")
     print(f"注单文件: {out_path}")
+    print(
+        f"预测记录 {len(selection)} 条 → 唯一比赛 {unique_matches} 场"
+        f"（去重 {len(selection) - unique_matches} 条同日重复）"
+    )
     print(f"注单总数: {len(bets)}")
     print()
 
