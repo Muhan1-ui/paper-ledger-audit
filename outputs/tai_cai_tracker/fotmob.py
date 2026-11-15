@@ -246,6 +246,7 @@ def discover_team_stats_url(team_name, minimum_score=0.90, tie_margin=0.04):
         score = registry_entry.get("score")
         return {
             **registry_entry,
+            "team_name": registry_entry.get("team_name") or registry_entry.get("source_name") or team_name.strip(),
             "score": score if isinstance(score, (int, float)) and not isinstance(score, bool) else 1.0,
             "search_url": registry_entry.get("search_url"),
         }

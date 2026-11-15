@@ -7,6 +7,7 @@ from unittest.mock import patch
 from outputs.tai_cai_tracker.fotmob import (
     FOTMOB_SEARCH_ALIASES,
     FotMobSearchResolutionError,
+    _registry_team_entry,
     build_fotmob_season_bridge_xg,
     build_match_xg_evidence,
     collect_team_search_candidates,
@@ -119,19 +120,43 @@ class FotMobTests(unittest.TestCase):
         self.assertEqual(FOTMOB_SEARCH_ALIASES["吉达国民"], "Al Ahli")
         self.assertEqual(FOTMOB_SEARCH_ALIASES["基多体大"], "LDU de Quito")
 
-    def test_discover_team_stats_url_uses_verified_search_alias(self):
+    def test_discover_team_stats_url_uses_provider_search_when_registry_has_no_entry(self):
         payload = {
             "suggestions": [{
                 "type": "team",
-                "entity": {"id": 8411, "name": "Preston North End", "leagueName": "Championship"},
+                "entity": {"id": 12345, "name": "Salford City FC", "leagueName": "League Two"},
             }]
         }
 
+        self.assertIsNone(_registry_team_entry("Salford City FC"))
+
         with patch("outputs.tai_cai_tracker.fotmob._http_get", return_value=(json.dumps(payload), {})) as fetch:
+            result = discover_team_stats_url("Salford City FC")
+
+        self.assertEqual(result["team_name"], "Salford City FC")
+        self.assertIn("Salford%20City%20FC", fetch.call_args.args[0])
+
+    def test_discover_team_stats_url_resolves_registered_name_without_network(self):
+        entry = _registry_team_entry("普雷斯顿")
+        self.assertIsNotNone(entry)
+
+        with patch("outputs.tai_cai_tracker.fotmob._http_get") as fetch:
             result = discover_team_stats_url("普雷斯顿")
 
-        self.assertEqual(result["team_name"], "Preston North End")
-        self.assertIn("Preston%20North%20End", fetch.call_args.args[0])
+        fetch.assert_not_called()
+        self.assertEqual(result["team_name"], entry["source_name"])
+        self.assertEqual(result["source_url"], entry["source_url"])
+
+    def test_discover_team_stats_url_resolves_registered_ac_milan_without_network(self):
+        entry = _registry_team_entry("AC米兰")
+        self.assertIsNotNone(entry)
+
+        with patch("outputs.tai_cai_tracker.fotmob._http_get") as fetch:
+            result = discover_team_stats_url("AC米兰")
+
+        fetch.assert_not_called()
+        self.assertEqual(result["team_name"], entry["source_name"])
+        self.assertEqual(result["source_url"], entry["source_url"])
 
     def test_discover_team_stats_url_labels_empty_public_search_as_no_public_candidates(self):
         payload = {"suggestions": []}
@@ -297,18 +322,20 @@ class FotMobTests(unittest.TestCase):
 
         self.assertEqual(result["team_id"], 9906)
 
-    def test_discover_team_stats_url_uses_curated_cagliari_search_name(self):
+    def test_discover_team_stats_url_keeps_provider_search_for_unregistered_name(self):
         payload = {
             "suggestions": [
-                {"type": "team", "entity": {"id": 8529, "name": "Cagliari"}},
+                {"type": "team", "entity": {"id": 12346, "name": "Havant and Waterlooville"}},
             ]
         }
 
-        with patch("outputs.tai_cai_tracker.fotmob._http_get", return_value=(json.dumps(payload), {})) as get:
-            result = discover_team_stats_url("卡利亚里")
+        self.assertIsNone(_registry_team_entry("Havant and Waterlooville"))
 
-        self.assertEqual(result["team_id"], 8529)
-        self.assertIn("Cagliari", get.call_args.args[0])
+        with patch("outputs.tai_cai_tracker.fotmob._http_get", return_value=(json.dumps(payload), {})) as get:
+            result = discover_team_stats_url("Havant and Waterlooville")
+
+        self.assertEqual(result["team_id"], 12346)
+        self.assertIn("Havant%20and%20Waterlooville", get.call_args.args[0])
 
     def test_discover_match_team_stats_urls_resolves_both_teams(self):
         home = {"team_id": 1, "team_name": "Home FC", "source_url": "https://www.fotmob.com/teams/1/overview/home-fc"}
