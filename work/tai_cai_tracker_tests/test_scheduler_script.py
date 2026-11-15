@@ -34,7 +34,7 @@ class SchedulerScriptTests(unittest.TestCase):
         )
 
         self.assertIn('"cycle"', script)
-        self.assertIn('("preflight", "prematch", "settle")', script)
+        self.assertIn('("preflight", "prematch", "odds-refresh", "settle")', script)
         self.assertIn('"completed_with_failures"', script)
 
     def test_scheduler_writes_the_completed_result_to_standard_output(self):
