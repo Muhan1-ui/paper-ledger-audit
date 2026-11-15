@@ -39,10 +39,14 @@ from typing import Any, Iterable, Mapping, Sequence
 
 DEFAULT_LEDGER = Path("outputs/tai_cai_tracker/data/paper_ledger.jsonl")
 DEFAULT_OUT = Path("outputs/tai_cai_tracker/data/paper_bets.jsonl")
-# Measured bucket evidence: edges of 0-5 points are noise (122 bets, ROI -21.7%),
-# while edges of 5-10 points are profitable (17 bets, ROI +54.2%). The default
-# strategy therefore only takes bets whose best edge exceeds 5 points.
-DEFAULT_THRESHOLD = 0.05
+# The selection criterion is expected value (EV) at the official fixed prize,
+# not the de-vigged probability gap: settlement pays stake * (odds - 1) at the
+# raw price, while the de-vig removes the bookmaker margin. With a measured mean
+# three-way overround of 1.1305 across 231 fixtures, a positive EV needs an edge
+# above p_i*0.1305, so a uniform edge threshold is too loose on favourites and
+# too strict on longshots. DEFAULT_THRESHOLD is therefore the minimum expected
+# return per unit staked; 0.0 means only bets with positive EV are taken.
+DEFAULT_THRESHOLD = 0.0
 DEFAULT_OUTCOMES = ("home_win", "draw", "away_win")
 PROBABILITY_PLACES = Decimal("0.0000000001")  # 10 decimal places
 MONEY_PLACES = Decimal("0.01")
@@ -167,7 +171,7 @@ def _threshold_label(threshold: float | str | Decimal) -> str:
 
 
 def _strategy_name(threshold: float | str | Decimal) -> str:
-    return f"edge_gt_{_threshold_label(threshold)}"
+    return f"ev_gt_{_threshold_label(threshold)}"
 
 
 def _bet_key(bet: Mapping[str, Any]) -> tuple[str, str, str]:
@@ -352,9 +356,16 @@ def _select_bet(
     model_prob = {label: probabilities[label] / psum for label in DEFAULT_OUTCOMES}
     edge = {label: model_prob[label] - implied_prob[label] for label in DEFAULT_OUTCOMES}
 
-    best_label = max(DEFAULT_OUTCOMES, key=lambda label: edge[label])
-    if edge[best_label] <= threshold:
-        return None, "edge_not_above_threshold"
+    # Expected value per unit staked at the official fixed prize:
+    # p * odds - 1. ``odds`` holds the raw prize text, so parse before multiplying.
+    ev = {
+        label: model_prob[label] * _decimal(odds[label]) - Decimal(1)
+        for label in DEFAULT_OUTCOMES
+    }
+
+    best_label = max(DEFAULT_OUTCOMES, key=lambda label: ev[label])
+    if ev[best_label] <= threshold:
+        return None, "ev_not_above_threshold"
 
     context = record.get("match_context") or {}
     if not isinstance(context, Mapping):
@@ -374,6 +385,7 @@ def _select_bet(
         "model_probability": _prob_text(model_prob[best_label]),
         "implied_probability": _prob_text(implied_prob[best_label]),
         "edge": _prob_text(edge[best_label]),
+        "ev": _amount4_text(ev[best_label]),
         "threshold": float(threshold),
         "strategy": strategy,
         "probability_source": _probability_source(record),
@@ -387,7 +399,7 @@ def generate_bets(
     threshold: float = DEFAULT_THRESHOLD,
     stake: float = 10.0,
 ) -> list[dict[str, Any]]:
-    """Append new paper bets whose best model/implied edge exceeds ``threshold``.
+    """Append new paper bets whose best expected value exceeds ``threshold``.
 
     Two independent de-duplication layers apply:
 
@@ -1064,7 +1076,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--threshold",
         type=float,
         default=DEFAULT_THRESHOLD,
-        help="edge 阈值，默认 0.05（实测 0~5 点为噪声，5 点以上才下注）",
+        help="最低期望收益阈值，默认 0.0（只下 EV 为正的注）",
     )
     parser.add_argument("--stake", type=float, default=10.0, help="每注纸面本金")
     parser.add_argument(
