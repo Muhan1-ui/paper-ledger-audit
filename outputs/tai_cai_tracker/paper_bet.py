@@ -555,18 +555,24 @@ def _match_key(row: Mapping[str, Any]) -> tuple[str, str] | None:
 
 
 def _closing_capture(
-    captures: Sequence[Mapping[str, Any]], after: datetime
+    captures: Sequence[Mapping[str, Any]],
+    after: datetime,
+    before: datetime | None = None,
 ) -> Mapping[str, Any] | None:
     """Latest capture strictly after ``after``; 皇冠 preferred when present.
 
-    ``captures`` must already be scoped to one match. The choice is
-    deterministic: among 皇冠 rows the latest timestamp wins, otherwise the
-    latest row from any bookmaker. A row without a usable timestamp is ignored.
+    ``captures`` must already be scoped to one match. When ``before`` is given,
+    a capture must also be strictly earlier than it, so a price stamped at
+    kickoff is not treated as a closing price. The choice is deterministic:
+    among 皇冠 rows the latest timestamp wins, otherwise the latest row from any
+    bookmaker. A row without a usable timestamp is ignored.
     """
     later: list[tuple[datetime, Mapping[str, Any]]] = []
     for row in captures:
         captured_at = _parse_captured_at(row.get("captured_at"))
         if captured_at is None or captured_at <= after:
+            continue
+        if before is not None and captured_at >= before:
             continue
         later.append((captured_at, row))
     if not later:
@@ -592,7 +598,8 @@ def _clv_fields(
     key = _match_key(bet)
     if after is None or key is None:
         return blank
-    closing = _closing_capture(captures_by_match.get(key, ()), after)
+    before = _parse_captured_at(bet.get("kickoff_at"))
+    closing = _closing_capture(captures_by_match.get(key, ()), after, before)
     if closing is None:
         return blank
 

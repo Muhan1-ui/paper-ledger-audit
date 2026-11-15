@@ -4131,7 +4131,7 @@ def _official_result_deduplication_key(result):
     )
 
 
-def odds_refresh(ledger_path, max_hours_ahead=6.0):
+def odds_refresh(ledger_path, max_hours_ahead=24.0):
     with _ledger_operation_lock(ledger_path):
         return _odds_refresh(ledger_path, max_hours_ahead=max_hours_ahead)
 
@@ -4142,11 +4142,14 @@ def _same_odds(left, right):
     return all(str(left.get(label)) == str(right.get(label)) for label in OUTCOME_LABELS)
 
 
-def _odds_refresh(ledger_path, max_hours_ahead=6.0):
+def _odds_refresh(ledger_path, max_hours_ahead=24.0):
     """Re-capture the crown price for frozen fixtures that have not kicked off.
 
-    A prediction is frozen once, 30-60 minutes before kickoff, so a fixture
-    normally ends up with a single odds_capture row -- 207 of 224 fixtures did.
+    Predictions are normally frozen several hours before kickoff, not 30-60
+    minutes before it. A 6 hour window therefore started capturing only after
+    most predictions had already been made, so those fixtures never got an
+    odds_capture row after the prediction and CLV could not be computed. The
+    24 hour default covers the whole interval from prediction to kickoff.
     CLV needs the price at more than one point in time, so this stage revisits
     every frozen fixture still ahead of us and appends a capture whenever the
     crown price has actually moved. Unchanged prices are skipped so the ledger
@@ -4625,7 +4628,7 @@ def _build_parser():
         help="re-capture crown prices for frozen fixtures that have not kicked off",
     )
     odds_refresh_parser.add_argument("ledger_path")
-    odds_refresh_parser.add_argument("--max-hours-ahead", type=float, default=6.0)
+    odds_refresh_parser.add_argument("--max-hours-ahead", type=float, default=24.0)
 
     european_433_extract_parser = commands.add_parser(
         "european-433-extract",
