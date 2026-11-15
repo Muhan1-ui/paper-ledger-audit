@@ -73,7 +73,7 @@ function Invoke-TrackerStage {
                     last_completed_at = (Get-Date).ToString("o")
                 } | ConvertTo-Json -Compress | Set-Content -Path $PrematchStatePath -Encoding utf8
             } elseif ($Stage -eq "odds-refresh") {
-                $Output = & $Python -m outputs.tai_cai_tracker.cli odds-refresh $Ledger --max-hours-ahead 6 2>&1
+                $Output = & $Python -m outputs.tai_cai_tracker.cli odds-refresh $Ledger --max-hours-ahead 24 2>&1
                 if ($LASTEXITCODE -ne 0) {
                     throw "odds refresh command failed with exit code $LASTEXITCODE"
                 }

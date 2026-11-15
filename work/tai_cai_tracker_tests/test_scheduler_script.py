@@ -37,6 +37,15 @@ class SchedulerScriptTests(unittest.TestCase):
         self.assertIn('("preflight", "prematch", "odds-refresh", "settle")', script)
         self.assertIn('"completed_with_failures"', script)
 
+    def test_odds_refresh_uses_the_extended_lookahead_window(self):
+        script = (Path(__file__).resolve().parents[1] / "run-tai-cai-task.ps1").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("odds-refresh $Ledger --max-hours-ahead 24", script)
+        self.assertRegex(script, r"--max-hours-ahead 24(\s|$)")
+        self.assertNotRegex(script, r"--max-hours-ahead 6(\s|$)")
+
     def test_scheduler_writes_the_completed_result_to_standard_output(self):
         script = (Path(__file__).resolve().parents[1] / "run-tai-cai-task.ps1").read_text(
             encoding="utf-8"
