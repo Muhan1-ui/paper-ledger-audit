@@ -50,6 +50,11 @@ from .fotmob import (
 from .context import collect_pregame_context
 from .context import validate_pregame_context
 from .context_resolver import resolve_context_event
+from .daily_slip import (
+    DEFAULT_LEDGER_PATH as DEFAULT_DAILY_SLIP_LEDGER_PATH,
+    build_daily_slip,
+    format_daily_slip,
+)
 from .model import blend_probabilities, normalize_fixed_prizes, poisson_score_matrix
 from .markets import derive_official_markets, select_top_option
 from .football433 import collect_433, discover_433_detail_urls
@@ -4933,6 +4938,24 @@ def _build_parser():
     daily_freeze_status_parser.add_argument("scheduler_log_path")
     daily_freeze_status_parser.add_argument("--date")
 
+    daily_slip_parser = commands.add_parser(
+        "daily-slip",
+        help="print a read-only daily paper slip from already-frozen predictions",
+    )
+    daily_slip_parser.add_argument(
+        "--date",
+        help=(
+            "replay one Asia/Shanghai date (YYYY-MM-DD) with all of its frozen "
+            "fixtures; without it only today's not-yet-started fixtures are shown"
+        ),
+    )
+    daily_slip_parser.add_argument(
+        "--budget", type=int, default=10, help="total paper budget in yuan (default: 10)"
+    )
+    daily_slip_parser.add_argument(
+        "--ledger", default=str(DEFAULT_DAILY_SLIP_LEDGER_PATH), help="path to paper_ledger.jsonl"
+    )
+
     commands.add_parser(
         "source-access-check",
         help="check public source and explicit-proxy reachability without collecting or writing records",
@@ -5356,6 +5379,16 @@ def main(argv=None):
                 ensure_ascii=False,
                 sort_keys=True,
             ))
+        elif arguments.command == "daily-slip":
+            records = read_records(arguments.ledger)
+            slip_report = build_daily_slip(
+                records,
+                target_date=arguments.date,
+                budget=arguments.budget,
+                now=datetime.now(ZoneInfo("Asia/Shanghai")),
+                ledger_path=arguments.ledger,
+            )
+            print(format_daily_slip(slip_report))
         elif arguments.command == "source-access-check":
             print(json.dumps(
                 source_access_report(),
