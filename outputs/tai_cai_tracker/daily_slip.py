@@ -53,7 +53,7 @@ def _is_explicit_score(option: str) -> bool:
 
 
 RULE_LINES = (
-    "只投 SPF 和 HHAD：三选项玩法返奖率 88.4%，总进球/半全场 81.8%，比分 73.3%",
+    "只记录 SPF 和 HHAD：三选项玩法返奖率 88.4%，总进球/半全场 81.8%，比分 73.3%",
     "EV 上限 30%：实测 EV>60% 的 11 注模型高估 19pp，实际 ROI −80.9%",
 )
 
@@ -673,7 +673,7 @@ def format_daily_slip(report: Mapping[str, Any]) -> str:
 
     lines = [
         SEPARATOR,
-        f" 每日投注方案   {day_text}   预算 {report['budget']} 元   "
+        f" 每日纸面方案   {day_text}   预算 {report['budget']} 元   "
         f"可比 {len(report['matches'])} 场",
         SEPARATOR,
         "",
@@ -697,7 +697,7 @@ def format_daily_slip(report: Mapping[str, Any]) -> str:
     lines.append("  " + SLIP_FOOTER_RULE)
     lines.append(
         f"  共 {len(report['selections'])} 注 {report['total_stake']} 元"
-        f"   剩 {report['remaining']} 元无可投注"
+        f"   剩 {report['remaining']} 元无可记录"
     )
 
     parlay = report["parlay"]
@@ -712,7 +712,7 @@ def format_daily_slip(report: Mapping[str, Any]) -> str:
                 f"  {first['match_id']} {first['market']} {_slip_option_label(first)}"
                 f" × {second['match_id']} {second['market']} {_slip_option_label(second)}",
                 f"  合并赔率 {parlay['odds']:.2f}   理论命中率 "
-                f"{_percent(parlay['probability'])}   投入 {STAKE_PER_BET} 元中奖 "
+                f"{_percent(parlay['probability'])}   投入 {STAKE_PER_BET} 元命中 "
                 f"{parlay['payout']:.2f} 元",
                 "  串关仅作展示，不计入上方预算。",
                 "  3串1 及以上不做：实测 8 注 0 中",

@@ -6,7 +6,7 @@
 
 - 赛前抓体彩竞彩赔率 + 外部欧赔，冻结模型预测（SPF 胜平负）
 - 官方赛果出来后自动结算（每 2 小时）
-- 结算后自动生成纸面投注注单并算盈亏
+- 结算后自动生成纸面记录单并算偏差
 
 三个环节现在串在一条链上，计划任务 `TaiCaiTracker-Settle` 每 2 小时跑一次：
 抓赛果 → 结算预测 → 更新纸面注单。全程无窗口（VBS + wscript）。
@@ -73,7 +73,7 @@ CLV（收盘价对比）覆盖率原来只有 4.17%，336 注里 14 注拿到收
 
 ## 测试覆盖
 
-unittest 全套 471 个用例，全部通过。新增 paper_bet 测试 15 个，其中 `test_negative_ev_is_skipped_even_when_devig_edge_exceeds_five_points` 专门防止判据被改回 edge；做过变异验证，把判据退回 edge，该用例和边界用例同时变红。新增 closing_capture 测试 7 个。
+unittest 全套 494 个用例，实测 183 秒跑完，全部通过。新增 paper_bet 测试 15 个，其中 `test_negative_ev_is_skipped_even_when_devig_edge_exceeds_five_points` 专门防止判据被改回 edge；做过变异验证，把判据退回 edge，该用例和边界用例同时变红。新增 closing_capture 测试 7 个。
 
 venv 里没有 pytest，全部用标准库 unittest，运行方式是 `./.venv/Scripts/python.exe -m unittest discover -s work/tai_cai_tracker_tests -t .`
 
@@ -149,7 +149,7 @@ PowerShell 下加 `$env:PYTHONIOENCODING="utf-8"` 避免中文乱码。
 | 皇冠比体彩高 ≥5 点 | 16 | 0.234 | **50.0%**（体彩低估 26.6 点） |
 | 皇冠比体彩低 ≥5 点 | 23 | 0.562 | 47.8%（体彩高估 8.4 点） |
 
-**赚钱的不是模型，是"皇冠显著高于体彩"这个方向。** 这也解释了为什么 xg_blend 那 48 注只有 +2.12%（t=0.09）、market_spread 那 163 注有 +13.53%。
+**真正起作用的不是模型，是"皇冠显著高于体彩"这个方向。** 这也解释了为什么 xg_blend 那 48 注只有 +2.12%（t=0.09）、market_spread 那 163 注有 +13.53%。
 
 ## 外部对标（2026-11-14 检索核实）
 
@@ -162,7 +162,7 @@ PowerShell 下加 `$env:PYTHONIOENCODING="utf-8"` 避免中文乱码。
 三个可抄的具体做法：
 1. **幂次去水（power devig）** 替掉现在的比例去水，对长赔更准
 2. **CLV 追踪**：记录下注时价 vs 临场价，mperi1208 原话「CLV is the only honest proof of an edge」
-3. **Kelly 下注**（四分之一 Kelly），替掉固定 10 元
+3. **Kelly 仓位**（四分之一 Kelly），替掉固定 10 元
 
 ## 下一步（修正）
 

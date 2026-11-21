@@ -429,7 +429,7 @@ class DashboardServerTests(unittest.TestCase):
 
             self.assertEqual(status, 200)
             self.assertEqual(content_type, "text/html")
-            self.assertIn("<title>体彩数据追踪与校准平台</title>", body)
+            self.assertIn("<title>纸面数据审计与校准追踪系统</title>", body)
 
     def test_head_endpoints_match_get_metadata_without_a_response_body(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -472,7 +472,7 @@ class DashboardPageTests(unittest.TestCase):
         self.assertIn("/api/summary", page)
         self.assertNotRegex(page, r"https?://")
         for label in (
-            "体彩数据追踪与校准平台",
+            "纸面数据审计与校准追踪系统",
             "数据校准概览",
             "近 7 天",
             "近 30 天",

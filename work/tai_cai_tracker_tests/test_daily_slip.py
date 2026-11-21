@@ -275,7 +275,7 @@ class FormatTests(unittest.TestCase):
         for section in ("SPF 胜平负", "HHAD 让球(-1)", "TTG 总进球", "CRS 比分", "HAFU 半全场"):
             self.assertIn(section, text)
         self.assertIn("自检", text)
-        self.assertIn("只投 SPF 和 HHAD", text)
+        self.assertIn("只记录 SPF 和 HHAD", text)
 
 
 if __name__ == "__main__":
