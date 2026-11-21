@@ -56,3 +56,22 @@ work/chrome-*-profile/
 work/*.png
 # football-data.co.uk history cache
 outputs/tai_cai_tracker/data/history/
+
+# 本地配置备份快照
+outputs/tai_cai_tracker/data/*.bak-*
+# 运行日志（work 根目录下的临时日志）
+work/*.log
+work/*.stdout.log
+work/*.stderr.log
+# 同步任务导出包
+work/*task-backup-*.xml
+# 一次性结算队列快照
+work/settlement-queue-*.json
+# 一次性赛前探针输出
+work/logs/preflight-probe-*.json
+# 本地 Codex 评审运行日志
+work/reviews/*.log
+# 运行日志（work/logs 子目录下的临时日志）
+work/logs/*.log
+# 同步任务导出包（work/logs 下）
+work/logs/*task-backup-*.xml
